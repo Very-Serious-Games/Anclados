@@ -20,24 +20,21 @@
               "icon": "lucide-file",
               "title": "TODOs entrega 1"
             }
-          }
-        ]
-      },
-      {
-        "id": "08cb0aa7d83dc65b",
-        "type": "tabs",
-        "children": [
+          },
           {
-            "id": "e0bff5e945e2ebba",
+            "id": "5da82e13e543b74c",
             "type": "leaf",
             "state": {
-              "type": "graph",
-              "state": {},
-              "icon": "lucide-git-fork",
-              "title": "Graph view"
+              "type": "excalidraw",
+              "state": {
+                "file": "backend_schema.md"
+              },
+              "icon": "excalidraw-icon",
+              "title": "backend_schema"
             }
           }
-        ]
+        ],
+        "currentTab": 1
       }
     ],
     "direction": "vertical"
@@ -110,7 +107,7 @@
             "state": {
               "type": "backlink",
               "state": {
-                "file": "TODOs entrega 1.md",
+                "file": "Backend Architecture.md",
                 "collapseAll": false,
                 "extraContext": false,
                 "sortOrder": "alphabetical",
@@ -120,7 +117,7 @@
                 "unlinkedCollapsed": true
               },
               "icon": "links-coming-in",
-              "title": "Backlinks for TODOs entrega 1"
+              "title": "Backlinks for Backend Architecture"
             }
           },
           {
@@ -129,12 +126,12 @@
             "state": {
               "type": "outgoing-link",
               "state": {
-                "file": "TODOs entrega 1.md",
+                "file": "Backend Architecture.md",
                 "linksCollapsed": false,
                 "unlinkedCollapsed": true
               },
               "icon": "links-going-out",
-              "title": "Outgoing links from TODOs entrega 1"
+              "title": "Outgoing links from Backend Architecture"
             }
           },
           {
@@ -158,13 +155,13 @@
             "state": {
               "type": "outline",
               "state": {
-                "file": "TODOs entrega 1.md",
+                "file": "Backend Architecture.md",
                 "followCursor": false,
                 "showSearch": false,
                 "searchQuery": ""
               },
               "icon": "lucide-list",
-              "title": "Outline of TODOs entrega 1"
+              "title": "Outline of Backend Architecture"
             }
           }
         ]
@@ -182,12 +179,17 @@
       "daily-notes:Open today's daily note": false,
       "templates:Insert template": false,
       "command-palette:Open command palette": false,
-      "bases:Create new base": false
+      "bases:Create new base": false,
+      "obsidian-excalidraw-plugin:New drawing": false
     }
   },
-  "active": "d6f4b768875aef07",
+  "active": "5da82e13e543b74c",
   "lastOpenFiles": [
-    "Welcome.md",
-    "TODOs entrega 1.md"
+    "Backend Architecture.md",
+    "TODOs entrega 1.md",
+    "backend_schema.md",
+    "Excalidraw",
+    "Untitled.canvas",
+    "Welcome.md"
   ]
 }
