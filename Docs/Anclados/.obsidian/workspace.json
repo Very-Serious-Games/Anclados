@@ -25,12 +25,14 @@
             "id": "5da82e13e543b74c",
             "type": "leaf",
             "state": {
-              "type": "excalidraw",
+              "type": "markdown",
               "state": {
-                "file": "backend_schema.md"
+                "file": "Backend Architecture.md",
+                "mode": "source",
+                "source": false
               },
-              "icon": "excalidraw-icon",
-              "title": "backend_schema"
+              "icon": "lucide-file",
+              "title": "Backend Architecture"
             }
           }
         ],
@@ -185,9 +187,9 @@
   },
   "active": "5da82e13e543b74c",
   "lastOpenFiles": [
+    "backend_schema.md",
     "Backend Architecture.md",
     "TODOs entrega 1.md",
-    "backend_schema.md",
     "Excalidraw",
     "Untitled.canvas",
     "Welcome.md"
