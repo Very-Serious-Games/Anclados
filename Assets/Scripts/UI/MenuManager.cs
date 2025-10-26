@@ -35,13 +35,13 @@ public class MenuManager : MonoBehaviour
         {
             case ConnectionType.Host:
 
-                GameManager.Instance.CreateServer();
+                GameManager.Instance.CreateServer(ServerType.UDP);
                 GameManager.Instance.networkServer.Start(7777);
 
                 break;
             case ConnectionType.Client:
 
-                GameManager.Instance.StartClient();
+                GameManager.Instance.StartClient(ServerType.UDP);
                 GameManager.Instance.networkClient.Connect(ip, 7777);
 
                 break;

@@ -6,6 +6,12 @@ public enum ConnectionType
     Client
 }
 
+public enum ServerType
+{
+    TCP,
+    UDP
+}
+
 // Singleton
 public class GameManager : MonoBehaviour
 {
@@ -52,11 +58,11 @@ public class GameManager : MonoBehaviour
     }
 
     // TODO: Add a way to choose the server type created
-    public void CreateServer()
+    public void CreateServer(ServerType serverType)
     {
         if (networkServer == null)
         {
-            ITransport transport = new UdpTransport();
+            ITransport transport = serverType == ServerType.TCP ? new TcpTransport() : new UdpTransport();
             INetworkSerializer serializer = new JSONNetSerializer();
 
             networkServer = new NetworkServer(transport, serializer);
@@ -68,11 +74,11 @@ public class GameManager : MonoBehaviour
     }
 
     // TODO: Add a way to choose the client type created
-    public void StartClient()
+    public void StartClient(ServerType serverType)
     {
         if (networkClient == null)
         {
-            ITransport transport = new UdpTransport();
+            ITransport transport = serverType == ServerType.TCP ? new TcpTransport() : new UdpTransport();
             INetworkSerializer serializer = new JSONNetSerializer();
 
             networkClient = new NetworkClient(transport, serializer);
