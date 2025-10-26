@@ -38,6 +38,9 @@ public class MenuManager : MonoBehaviour
                 GameManager.Instance.CreateServer(ServerType.UDP);
                 GameManager.Instance.networkServer.Start(7777);
 
+                GameManager.Instance.StartClient(ServerType.UDP);
+                GameManager.Instance.networkClient.Connect("127.0.0.1", 7777);
+
                 break;
             case ConnectionType.Client:
 
