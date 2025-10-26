@@ -68,10 +68,10 @@ public class ChatManager : MonoBehaviour
             if (gameManager.chatServer != null)
             {
                 // TODO do something like: 
-                // gameManager.chatServer.Broadcast(chatMessage, excludePeer: sender);
+                gameManager.chatServer.Broadcast(chatMessage, excludePeer: sender);
 
                 // For now, just broadcast to all
-                gameManager.chatServer.Broadcast(chatMessage);
+                //gameManager.chatServer.Broadcast(chatMessage);
             }
         }
     }
