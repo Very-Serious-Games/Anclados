@@ -16,9 +16,13 @@ public enum ServerType
 public class GameManager : MonoBehaviour
 {
     // Public variables
-    public NetworkServer networkServer = null;
-    public NetworkClient networkClient = null;
+    public NetworkServer gameServer = null;
+    public NetworkClient gameClient = null;
+    public NetworkServer chatServer = null;
+    public NetworkClient chatClient = null;
     public ConnectionType connectionType;
+
+    private string username;
 
     // -- Singleton Logic -- //
 
@@ -57,35 +61,64 @@ public class GameManager : MonoBehaviour
     {
     }
 
-    // TODO: Add a way to choose the server type created
+    private NetworkServer CreateServerInstance(ServerType serverType)
+    {
+        ITransport transport = serverType == ServerType.TCP ? (ITransport)new TcpTransport() : new UdpTransport();
+        INetworkSerializer serializer = new JSONNetSerializer();
+        return new NetworkServer(transport, serializer);
+    }
+
     public void CreateServer(ServerType serverType)
     {
-        if (networkServer == null)
+        if (gameServer == null)
         {
-            ITransport transport = serverType == ServerType.TCP ? new TcpTransport() : new UdpTransport();
-            INetworkSerializer serializer = new JSONNetSerializer();
-
-            networkServer = new NetworkServer(transport, serializer);
+            gameServer = CreateServerInstance(serverType);
+            Debug.Log($"Created {serverType} game server.");
+        }
+        else if (chatServer == null)
+        {
+            chatServer = CreateServerInstance(serverType);
+            Debug.Log($"Created {serverType} chat server.");
         }
         else
         {
-            Debug.LogWarning("You are trying to create a server and a server is already created");
+            Debug.LogWarning("Both gameServer and chatServer already exist.");
         }
+    }
+
+    private NetworkClient CreateClientInstance(ServerType serverType)
+    {
+        ITransport transport = serverType == ServerType.TCP ? (ITransport)new TcpTransport() : new UdpTransport();
+        INetworkSerializer serializer = new JSONNetSerializer();
+        return new NetworkClient(transport, serializer);
     }
 
     // TODO: Add a way to choose the client type created
     public void StartClient(ServerType serverType)
     {
-        if (networkClient == null)
+        if (gameClient == null)
         {
-            ITransport transport = serverType == ServerType.TCP ? new TcpTransport() : new UdpTransport();
-            INetworkSerializer serializer = new JSONNetSerializer();
-
-            networkClient = new NetworkClient(transport, serializer);
+            gameClient = CreateClientInstance(serverType);
+            Debug.Log($"Created {serverType} game client.");
+        }
+        else if (chatClient == null)
+        {
+            chatClient = CreateClientInstance(serverType);
+            Debug.Log($"Created {serverType} chat client.");
         }
         else
         {
-            Debug.LogWarning("You are trying to create a client and a client is already created");
+            Debug.LogWarning("Both gameClient and chatClient already exist.");
         }
+    }
+
+    public void SetUsername(string name)
+    {
+        username = name;
+    }
+
+    public string GetUsername()
+    {
+        return username;
     }
 }

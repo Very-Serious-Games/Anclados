@@ -53,6 +53,7 @@ public class NetworkServer
         _transport.SendToClient(peer.ConnectionId, data);
     }
 
+    // TODO: Be able to exclude the sender peer if needed
     public void Broadcast<T>(T message) where T : INetworkMessage
     {
         byte[] data = _serializer.Serialize(message);

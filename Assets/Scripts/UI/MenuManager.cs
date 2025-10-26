@@ -36,21 +36,32 @@ public class MenuManager : MonoBehaviour
             case ConnectionType.Host:
 
                 GameManager.Instance.CreateServer(ServerType.UDP);
-                GameManager.Instance.networkServer.Start(7777);
+                GameManager.Instance.gameServer.Start(7777);
 
                 GameManager.Instance.StartClient(ServerType.UDP);
-                GameManager.Instance.networkClient.Connect("127.0.0.1", 7777);
+                GameManager.Instance.gameClient.Connect("127.0.0.1", 7777);
+
+                GameManager.Instance.CreateServer(ServerType.TCP);
+                GameManager.Instance.chatServer.Start(7778);
+
+                GameManager.Instance.StartClient(ServerType.TCP);
+                GameManager.Instance.chatClient.Connect("127.0.0.1", 7778);
 
                 break;
             case ConnectionType.Client:
 
                 GameManager.Instance.StartClient(ServerType.UDP);
-                GameManager.Instance.networkClient.Connect(ip, 7777);
+                GameManager.Instance.gameClient.Connect(ip, 7777);
+
+                GameManager.Instance.StartClient(ServerType.TCP);
+                GameManager.Instance.chatClient.Connect(ip, 7778);
 
                 break;
             default:
                 break;
         }
+
+        GameManager.Instance.SetUsername(username);
 
         SceneManager.LoadScene("Lobby Scene");
     }
