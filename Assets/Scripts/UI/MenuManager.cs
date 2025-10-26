@@ -2,11 +2,15 @@ using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 using System.Collections;
+using System;
 
 public class MenuManager : MonoBehaviour
 {
     public GameObject[] buttonsToShow;
     public float fadeDuration = 0.5f;
+
+    private String ip;
+    private String username;
 
     public void GoToMainMenu()
     {
@@ -15,16 +19,36 @@ public class MenuManager : MonoBehaviour
 
     public void GoToHost()
     {
+        GameManager.Instance.connectionType = ConnectionType.Host;
         SceneManager.LoadScene("Host Scene");
     }
 
     public void GoToJoin()
     {
+        GameManager.Instance.connectionType = ConnectionType.Client;
         SceneManager.LoadScene("Join Scene");
     }
 
     public void GoToLobby()
     {
+        switch (GameManager.Instance.connectionType)
+        {
+            case ConnectionType.Host:
+
+                GameManager.Instance.CreateServer();
+                GameManager.Instance.networkServer.Start(7777);
+
+                break;
+            case ConnectionType.Client:
+
+                GameManager.Instance.StartClient();
+                GameManager.Instance.networkClient.Connect(ip, 7777);
+
+                break;
+            default:
+                break;
+        }
+
         SceneManager.LoadScene("Lobby Scene");
     }
 
@@ -61,6 +85,16 @@ public class MenuManager : MonoBehaviour
         }
 
         Debug.Log("Botones ocultados con fade out.");
+    }
+
+    public void OnIpTextValueChanged(String text)
+    {
+        ip = text;
+    }
+
+    public void OnUsernameTextValueChanged(String text)
+    {
+        username = text;
     }
 
     private IEnumerator FadeAndDisable(GameObject obj)
