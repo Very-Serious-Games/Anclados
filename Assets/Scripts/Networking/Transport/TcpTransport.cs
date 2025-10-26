@@ -41,19 +41,19 @@ public class TcpTransport : ITransport
             connectionsById.Clear();
             connectionsByClient.Clear();
 
-            Debug.Log($"[TcpTransport - Socket] Server started at port {port}");
+            MainThreadDispatcher.Enqueue(() => Debug.Log($"[TcpTransport - Socket] Server started at port {port}"));
 
             Task.Run(() => AcceptClientsAsync(cts.Token));
         }
         catch (Exception e)
         {
-            Debug.LogError($"[TcpTransport - Socket] Server start failed: {e.Message}");
+            MainThreadDispatcher.Enqueue(() => Debug.LogError($"[TcpTransport - Socket] Server start failed: {e.Message}"));
         }
     }
 
     public void StopServer()
     {
-        Debug.Log("[TcpTransport - Socket] Server stopping...");
+        MainThreadDispatcher.Enqueue(() => Debug.Log("[TcpTransport - Socket] Server stopping..."));
 
         cts?.Cancel();
 
@@ -79,7 +79,7 @@ public class TcpTransport : ITransport
                 connectionsById[connectionId] = client;
                 connectionsByClient[client] = connectionId;
 
-                OnClientConnected?.Invoke(connectionId);
+                MainThreadDispatcher.Enqueue(() => OnClientConnected?.Invoke(connectionId));
 
                 Task.Run(() => HandleClientAsync(client, connectionId, token));
             }
@@ -88,7 +88,7 @@ public class TcpTransport : ITransport
             {
                 if (!token.IsCancellationRequested)
                 {
-                    Debug.LogError($"[TcpTransport - Socket] Server accept error: {e.Message}");
+                    MainThreadDispatcher.Enqueue(() => Debug.LogError($"[TcpTransport - Socket] Server accept error: {e.Message}"));
                 }
             }
         }
@@ -120,21 +120,22 @@ public class TcpTransport : ITransport
 
                 if (totalRead == messageLength)
                 {
-                    OnDataReceived?.Invoke(connectionId, buffer);
+                    byte[] dataCopy = buffer;
+                    MainThreadDispatcher.Enqueue(() => OnDataReceived?.Invoke(connectionId, dataCopy));
                 }
             }
         }
         catch (OperationCanceledException) { }
         catch (Exception e)
         {
-            Debug.LogError($"[TcpTransport - Socket] Server receive error from client {connectionId}: {e.Message}");
+            MainThreadDispatcher.Enqueue(() => Debug.LogError($"[TcpTransport - Socket] Server receive error from client {connectionId}: {e.Message}"));
         }
         finally
         {
             connectionsById.Remove(connectionId);
             connectionsByClient.Remove(client);
             client?.Close();
-            OnClientDisconnected?.Invoke(connectionId);
+            MainThreadDispatcher.Enqueue(() => OnClientDisconnected?.Invoke(connectionId));
         }
     }
 
@@ -147,7 +148,7 @@ public class TcpTransport : ITransport
             clientSocket = new TcpClient();
             cts = new CancellationTokenSource();
 
-            Debug.Log($"[TcpTransport - Socket] Client connecting to {ip}:{port}");
+            MainThreadDispatcher.Enqueue(() => Debug.Log($"[TcpTransport - Socket] Client connecting to {ip}:{port}"));
 
             Task.Run(async () =>
             {
@@ -155,31 +156,34 @@ public class TcpTransport : ITransport
                 {
                     await clientSocket.ConnectAsync(ip, port);
                     connectedToServer = true;
-                    OnConnectedToServer?.Invoke();
+                    MainThreadDispatcher.Enqueue(() => OnConnectedToServer?.Invoke());
 
                     await ListenClientAsync(cts.Token);
                 }
                 catch (Exception e)
                 {
-                    Debug.LogError($"[TcpTransport - Socket] Client connect failed: {e.Message}");
-                    OnDisconnectedFromServer?.Invoke();
+                    MainThreadDispatcher.Enqueue(() => 
+                    {
+                        Debug.LogError($"[TcpTransport - Socket] Client connect failed: {e.Message}");
+                        OnDisconnectedFromServer?.Invoke();
+                    });
                 }
             });
         }
         catch (Exception e)
         {
-            Debug.LogError($"[TcpTransport - Socket] Client connect initialization failed: {e.Message}");
+            MainThreadDispatcher.Enqueue(() => Debug.LogError($"[TcpTransport - Socket] Client connect initialization failed: {e.Message}"));
         }
     }
 
     public void Disconnect()
     {
-        Debug.Log("[TcpTransport - Socket] Client disconnecting...");
+        MainThreadDispatcher.Enqueue(() => Debug.Log("[TcpTransport - Socket] Client disconnecting..."));
         cts?.Cancel();
         clientSocket?.Close();
         connectedToServer = false;
 
-        OnDisconnectedFromServer?.Invoke();
+        MainThreadDispatcher.Enqueue(() => OnDisconnectedFromServer?.Invoke());
     }
 
     private async Task ListenClientAsync(CancellationToken token)
@@ -208,19 +212,20 @@ public class TcpTransport : ITransport
 
                 if (totalRead == messageLength)
                 {
-                    OnDataReceivedFromServer?.Invoke(buffer);
+                    byte[] dataCopy = buffer;
+                    MainThreadDispatcher.Enqueue(() => OnDataReceivedFromServer?.Invoke(dataCopy));
                 }
             }
         }
         catch (OperationCanceledException) { }
         catch (Exception e)
         {
-            Debug.LogError($"[TcpTransport - Socket] Client receive error: {e.Message}");
+            MainThreadDispatcher.Enqueue(() => Debug.LogError($"[TcpTransport - Socket] Client receive error: {e.Message}"));
         }
         finally
         {
             connectedToServer = false;
-            OnDisconnectedFromServer?.Invoke();
+            MainThreadDispatcher.Enqueue(() => OnDisconnectedFromServer?.Invoke());
         }
     }
 
@@ -238,7 +243,7 @@ public class TcpTransport : ITransport
         }
         catch (Exception e)
         {
-            Debug.LogError($"[TcpTransport - Socket] Send to server error: {e.Message}");
+            MainThreadDispatcher.Enqueue(() => Debug.LogError($"[TcpTransport - Socket] Send to server error: {e.Message}"));
         }
     }
 
@@ -257,7 +262,7 @@ public class TcpTransport : ITransport
         }
         catch (Exception e)
         {
-            Debug.LogError($"[TcpTransport - Socket] Send to client {connectionId} error: {e.Message}");
+            MainThreadDispatcher.Enqueue(() => Debug.LogError($"[TcpTransport - Socket] Send to client {connectionId} error: {e.Message}"));
         }
     }
 
