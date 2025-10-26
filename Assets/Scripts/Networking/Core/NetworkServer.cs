@@ -88,7 +88,7 @@ public class NetworkServer
         if (_connectedPeers.TryGetValue(connectionId, out Peer peer))
         {
             // This could be improved to be more useful using messageIDs to know the type
-            INetworkMessage message = _serializer.Deserialize<INetworkMessage>(data);
+            INetworkMessage message = _serializer.Deserialize(data);
 
             OnMessageReceived?.Invoke(peer, message);
         }

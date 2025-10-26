@@ -56,7 +56,7 @@ public class NetworkClient
 
     private void HandleDataReceived(byte[] data)
     {
-        INetworkMessage message = _serializer.Deserialize<INetworkMessage>(data);
+        INetworkMessage message = _serializer.Deserialize(data);
         OnMessageReceived?.Invoke(message);
     }
 }
