@@ -10,6 +10,7 @@ public class ChatManager : MonoBehaviour
     public TMP_InputField messageInputField;
     public Button sendButton;
     public ScrollRect chatScrollRect;
+    public TextMeshProUGUI chatText;
 
     [Header("Settings")]
     public int maxMessages = 100;
@@ -79,15 +80,21 @@ public class ChatManager : MonoBehaviour
     {
         // Setup message text
         string formattedMessage = $"[{chatMessage.timestamp:F2}] {chatMessage.username}: {chatMessage.message}";
-
+    
         chatMessages.Add(formattedMessage);
-
+    
         // Maintain max messages
         while (chatMessages.Count > maxMessages)
         {
             chatMessages.RemoveAt(0);
         }
-
+    
+        // Update UI text - join all messages with newlines
+        if (chatText != null)
+        {
+            chatText.text = string.Join("\n", chatMessages);
+        }
+    
         // Scroll to bottom
         Canvas.ForceUpdateCanvases();
         chatScrollRect.verticalNormalizedPosition = 0f;
