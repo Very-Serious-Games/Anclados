@@ -12,7 +12,17 @@ public class MenuManager : MonoBehaviour
     {
         SceneManager.LoadScene("Main Menu Scene");
     }
-    
+
+    public void GoToHost()
+    {
+        SceneManager.LoadScene("Host Scene");
+    }
+
+    public void GoToJoin()
+    {
+        SceneManager.LoadScene("Join Scene");
+    }
+
     public void GoToLobby()
     {
         SceneManager.LoadScene("Lobby Scene");
