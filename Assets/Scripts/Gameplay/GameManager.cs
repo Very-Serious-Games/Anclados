@@ -73,6 +73,7 @@ public class GameManager : MonoBehaviour
         if (gameServer == null)
         {
             gameServer = CreateServerInstance(serverType);
+
             Debug.Log($"Created {serverType} game server.");
         }
         else if (chatServer == null)
