@@ -48,7 +48,7 @@ public class UdpTransport : ITransport
 
             Debug.Log($"[UdpTransport - Socket] Server started at port {port}");
 
-            Task.Run(() => ListenServerAsync(cts.Token));            
+            Task.Run(() => ListenServerAsync(cts.Token));
         }
         catch (Exception e)
         {
