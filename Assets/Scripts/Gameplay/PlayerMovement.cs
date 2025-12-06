@@ -21,6 +21,19 @@ public class PlayerMovement : MonoBehaviour
     public float rudderReturnSpeed = 15f;
     private float rudderAngle = 0f;
 
+    [Header("Cannons")]
+    public Transform cannonLeft;
+    public Transform cannonRight;
+    public GameObject cannonballPrefab;
+    public float cannonballSpeed = 40f;
+    public float cannonballLifetime = 5f;
+    public float fireCooldown = 1.2f;
+    public float recoilForce = 200f;
+
+    private float nextFireLeft = 0f;
+    private float nextFireRight = 0f;
+
+
     [Header("Behavior")]
     public float lateralDrag = 2f;
     public bool lockHeight = true;
@@ -36,6 +49,7 @@ public class PlayerMovement : MonoBehaviour
 
         if (lockHeight)
             rb.constraints |= RigidbodyConstraints.FreezePositionY;
+
     }
 
     void Update()
@@ -44,6 +58,7 @@ public class PlayerMovement : MonoBehaviour
         {
             StartCoroutine(ToggleAnchor());
         }
+        HandleCannons();
     }
 
     void FixedUpdate()
@@ -154,4 +169,43 @@ public class PlayerMovement : MonoBehaviour
         Vector3 force = -lateral * lateralDrag * Time.fixedDeltaTime;
         rb.AddForce(force, ForceMode.VelocityChange);
     }
+
+    private void HandleCannons()
+{
+    // Cañón izquierdo (tecla Z)
+    if (Input.GetKeyDown(KeyCode.Z) && Time.time >= nextFireLeft)
+    {
+        FireCannon(cannonLeft, true);
+        nextFireLeft = Time.time + fireCooldown;
+    }
+
+    // Cañón derecho (tecla X)
+    if (Input.GetKeyDown(KeyCode.X) && Time.time >= nextFireRight)
+    {
+        FireCannon(cannonRight, false);
+        nextFireRight = Time.time + fireCooldown;
+    }
+}
+
+
+    private void FireCannon(Transform cannon, bool isLeft)
+{
+    if (cannonballPrefab == null || cannon == null)
+        return;
+
+    GameObject ball = Instantiate(cannonballPrefab, cannon.position, cannon.rotation);
+
+    Rigidbody ballRb = ball.GetComponent<Rigidbody>();
+
+    if (ballRb != null)
+    {
+        ballRb.linearVelocity = cannon.forward * cannonballSpeed;
+
+        Vector3 recoil = -cannon.forward * recoilForce;
+        rb.AddForce(recoil, ForceMode.Impulse);
+    }
+
+    Destroy(ball, cannonballLifetime);
+}
+
 }
