@@ -16,9 +16,13 @@ public class ChatManager : MonoBehaviour
     public int maxMessages = 100;
     private string username;
     private List<string> chatMessages = new List<string>();
-    GameManager gameManager = GameManager.Instance;
+    private GameManager gameManager;
+    
     private void Start()
     {
+        // Get GameManager instance
+        gameManager = GameManager.Instance;
+        
         // Get username
         username = gameManager.GetUsername();
 
