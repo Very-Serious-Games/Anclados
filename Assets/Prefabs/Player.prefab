@@ -138,12 +138,6 @@ PrefabInstance:
     m_AddedComponents:
     - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: ca8448b895fd0ddb79df5bf5942a692a, type: 3}
       insertIndex: -1
-      addedObject: {fileID: 3941253087722260274}
-    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: ca8448b895fd0ddb79df5bf5942a692a, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 1802882211999620650}
-    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: ca8448b895fd0ddb79df5bf5942a692a, type: 3}
-      insertIndex: -1
       addedObject: {fileID: 9054590302059803704}
     - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: ca8448b895fd0ddb79df5bf5942a692a, type: 3}
       insertIndex: -1
@@ -151,61 +145,21 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: ca8448b895fd0ddb79df5bf5942a692a, type: 3}
       insertIndex: -1
       addedObject: {fileID: 335139037443951349}
+    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: ca8448b895fd0ddb79df5bf5942a692a, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 7502277936866688926}
+    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: ca8448b895fd0ddb79df5bf5942a692a, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 6865720998899427069}
+    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: ca8448b895fd0ddb79df5bf5942a692a, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 2654904024553256796}
   m_SourcePrefab: {fileID: 100100000, guid: ca8448b895fd0ddb79df5bf5942a692a, type: 3}
 --- !u!1 &6025429379792614025 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 919132149155446097, guid: ca8448b895fd0ddb79df5bf5942a692a, type: 3}
   m_PrefabInstance: {fileID: 6872433422282821592}
   m_PrefabAsset: {fileID: 0}
---- !u!114 &3941253087722260274
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 6025429379792614025}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: ab196751eb5ed4c429ef20b2e80f8ff9, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  maxHealth: 100
-  currentHealth: 100
-  damageFromCannonball: 25
-  sinkSpeed: 0.5
-  tiltSpeed: 20
---- !u!114 &1802882211999620650
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 6025429379792614025}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: ca705c87a87c6494185380df5bbd2935, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  acceleration: 20
-  maxSpeed: 10
-  reverseSpeed: 4
-  dragWater: 0.8
-  anchorKey: 102
-  anchorDropTime: 2
-  anchorLiftTime: 2
-  anchorExtraDrag: 10
-  rudderMaxAngle: 35
-  rudderChangeSpeed: 40
-  rudderReturnSpeed: 15
-  cannonLeft: {fileID: 2737682344006975839}
-  cannonRight: {fileID: 4803779412890483999}
-  cannonballPrefab: {fileID: 6586484079166372510, guid: 4ad2c5a99e8623a48a0abccdde4bc459, type: 3}
-  cannonballSpeed: 40
-  cannonballLifetime: 5
-  fireCooldown: 1.2
-  recoilForce: 2
-  lateralDrag: 2
-  lockHeight: 1
 --- !u!54 &9054590302059803704
 Rigidbody:
   m_ObjectHideFlags: 0
@@ -285,6 +239,73 @@ MeshCollider:
   m_Convex: 1
   m_CookingOptions: 30
   m_Mesh: {fileID: -2186164198582519963, guid: ca8448b895fd0ddb79df5bf5942a692a, type: 3}
+--- !u!114 &7502277936866688926
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6025429379792614025}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 61a58f26af05f29bd945a8dee6ede9e1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  playerId: -1
+  isLocalPlayer: 0
+  username: 
+  connectionId: -1
+  spawnTime: 0
+--- !u!114 &6865720998899427069
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6025429379792614025}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1160ace2bb7b4469a96db68a490959d2, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  isLocalPlayer: 0
+  playerId: -1
+  acceleration: 8
+  maxSpeed: 12
+  reverseSpeed: 4
+  dragWater: 0.8
+  anchorKey: 102
+  anchorDropTime: 2
+  anchorLiftTime: 2
+  anchorExtraDrag: 10
+  rudderMaxAngle: 35
+  rudderChangeSpeed: 40
+  rudderReturnSpeed: 15
+  cannonLeft: {fileID: 2737682344006975839}
+  cannonRight: {fileID: 4803779412890483999}
+  fireLeftKey: 122
+  fireRightKey: 120
+  fireCooldown: 1.2
+  lateralDrag: 2
+  lockHeight: 1
+  anchorActive: 0
+--- !u!114 &2654904024553256796
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6025429379792614025}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 48538eb504f645ac9a16638ad65a73d9, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  maxHealth: 100
+  currentHealth: 100
+  isLocalPlayer: 0
+  playerId: -1
+  healthBar: {fileID: 0}
 --- !u!4 &6401146365166872627 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: -8679921383154817045, guid: ca8448b895fd0ddb79df5bf5942a692a, type: 3}

@@ -17,12 +17,12 @@ public class LobbySceneManager : MonoBehaviour
 
         if (GameManager.Instance.gameServer != null)
         {
-            GameManager.Instance.gameServer.Stop();
+            GameManager.Instance.gameServer.StopServer();
         }
 
         if (GameManager.Instance.chatServer != null)
         {
-            GameManager.Instance.chatServer.Stop();
+            GameManager.Instance.chatServer.StopServer();
         }
 
         SceneManager.LoadScene("Main Menu Scene");

@@ -26,11 +26,11 @@ public class MainThreadDispatcher : MonoBehaviour
         {
             try
             {
-                action();
+                action?.Invoke();
             }
             catch (Exception e)
             {
-                Debug.LogError($"[MainThreadDispatcher] Action error: {e.Message}");
+                Debug.LogError($"[MainThreadDispatcher] Action error: {e.GetType().Name}: {e.Message}\nStackTrace: {e.StackTrace}");
             }
         }
     }

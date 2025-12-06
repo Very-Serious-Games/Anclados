@@ -61,24 +61,37 @@ public class GameManager : MonoBehaviour
     {
     }
 
-    private NetworkServer CreateServerInstance(ServerType serverType)
+    private NetworkServer CreateServerInstance(ServerType serverType, string serverName)
     {
         ITransport transport = serverType == ServerType.TCP ? (ITransport)new TcpTransport() : new UdpTransport();
         INetworkSerializer serializer = new JSONNetSerializer();
-        return new NetworkServer(transport, serializer);
+        
+        GameObject serverObj = new GameObject($"NetworkServer_{serverName}");
+        serverObj.transform.SetParent(this.transform);
+        NetworkServer server = serverObj.AddComponent<NetworkServer>();
+        
+        // Use reflection to set readonly fields
+        var transportField = typeof(NetworkServer).GetField("_transport", 
+            System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+        var serializerField = typeof(NetworkServer).GetField("_serializer", 
+            System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+        
+        transportField?.SetValue(server, transport);
+        serializerField?.SetValue(server, serializer);
+        
+        return server;
     }
 
     public void CreateServer(ServerType serverType)
     {
         if (gameServer == null)
         {
-            gameServer = CreateServerInstance(serverType);
-
+            gameServer = CreateServerInstance(serverType, "Game");
             Debug.Log($"Created {serverType} game server.");
         }
         else if (chatServer == null)
         {
-            chatServer = CreateServerInstance(serverType);
+            chatServer = CreateServerInstance(serverType, "Chat");
             Debug.Log($"Created {serverType} chat server.");
         }
         else
@@ -87,11 +100,25 @@ public class GameManager : MonoBehaviour
         }
     }
 
-    private NetworkClient CreateClientInstance(ServerType serverType)
+    private NetworkClient CreateClientInstance(ServerType serverType, string clientName)
     {
         ITransport transport = serverType == ServerType.TCP ? (ITransport)new TcpTransport() : new UdpTransport();
         INetworkSerializer serializer = new JSONNetSerializer();
-        return new NetworkClient(transport, serializer);
+        
+        GameObject clientObj = new GameObject($"NetworkClient_{clientName}");
+        clientObj.transform.SetParent(this.transform);
+        NetworkClient client = clientObj.AddComponent<NetworkClient>();
+        
+        // Use reflection to set readonly fields
+        var transportField = typeof(NetworkClient).GetField("_transport", 
+            System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+        var serializerField = typeof(NetworkClient).GetField("_serializer", 
+            System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+        
+        transportField?.SetValue(client, transport);
+        serializerField?.SetValue(client, serializer);
+        
+        return client;
     }
 
     // TODO: Add a way to choose the client type created
@@ -99,12 +126,12 @@ public class GameManager : MonoBehaviour
     {
         if (gameClient == null)
         {
-            gameClient = CreateClientInstance(serverType);
+            gameClient = CreateClientInstance(serverType, "Game");
             Debug.Log($"Created {serverType} game client.");
         }
         else if (chatClient == null)
         {
-            chatClient = CreateClientInstance(serverType);
+            chatClient = CreateClientInstance(serverType, "Chat");
             Debug.Log($"Created {serverType} chat client.");
         }
         else
