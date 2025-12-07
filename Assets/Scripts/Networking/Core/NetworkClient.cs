@@ -22,7 +22,11 @@ public class NetworkClient : MonoBehaviour
     {
         _transport = transport;
         _serializer = serializer;
-        
+    }
+    
+    void Awake()
+    {
+        // Initialize packet queue in Awake to ensure it's created when MonoBehaviour is instantiated
         _packetQueue = new PacketQueue(
             packet => SendPacketImmediate(packet),
             maxMessagesPerPacket,

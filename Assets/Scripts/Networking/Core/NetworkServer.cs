@@ -18,10 +18,10 @@ public class NetworkServer : MonoBehaviour
     private readonly INetworkSerializer _serializer;
 
     // Connected Peers
-    private Dictionary<int, Peer> _connectedPeers = new Dictionary<int, Peer>();
+    private Dictionary<int, Peer> _connectedPeers;
     
     // Packet batching per peer
-    private Dictionary<int, PacketQueue> _peerQueues = new Dictionary<int, PacketQueue>();
+    private Dictionary<int, PacketQueue> _peerQueues;
     
     [Header("Packet Batching")]
     public bool enableBatching = true;
@@ -32,6 +32,13 @@ public class NetworkServer : MonoBehaviour
     {
         _transport = transport;
         _serializer = serializer;
+    }
+    
+    void Awake()
+    {
+        // Initialize dictionaries in Awake to ensure they're created when MonoBehaviour is instantiated
+        _connectedPeers = new Dictionary<int, Peer>();
+        _peerQueues = new Dictionary<int, PacketQueue>();
     }
 
     public void StartServer(int port)
@@ -78,8 +85,6 @@ public class NetworkServer : MonoBehaviour
 
     public void Broadcast<T>(T message, Peer excludePeer = null) where T : INetworkMessage
     {
-        if (_connectedPeers == null || _connectedPeers.Count == 0) return;
-        
         byte[] data = _serializer.Serialize(message);
         foreach (var peer in _connectedPeers.Values)
         {
