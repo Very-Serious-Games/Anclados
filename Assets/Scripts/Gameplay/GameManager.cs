@@ -61,23 +61,22 @@ public class GameManager : MonoBehaviour
     {
     }
 
+    void Update()
+    {
+        // Update network instances for packet batching
+        gameServer?.Update();
+        gameClient?.Update();
+        chatServer?.Update();
+        chatClient?.Update();
+    }
+
     private NetworkServer CreateServerInstance(ServerType serverType, string serverName)
     {
         ITransport transport = serverType == ServerType.TCP ? (ITransport)new TcpTransport() : new UdpTransport();
         INetworkSerializer serializer = new JSONNetSerializer();
         
-        GameObject serverObj = new GameObject($"NetworkServer_{serverName}");
-        serverObj.transform.SetParent(this.transform);
-        NetworkServer server = serverObj.AddComponent<NetworkServer>();
-        
-        // Use reflection to set readonly fields
-        var transportField = typeof(NetworkServer).GetField("_transport", 
-            System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-        var serializerField = typeof(NetworkServer).GetField("_serializer", 
-            System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-        
-        transportField?.SetValue(server, transport);
-        serializerField?.SetValue(server, serializer);
+        NetworkServer server = new NetworkServer(transport, serializer);
+        Debug.Log($"[GameManager] Created {serverType} server: {serverName}");
         
         return server;
     }
@@ -105,18 +104,8 @@ public class GameManager : MonoBehaviour
         ITransport transport = serverType == ServerType.TCP ? (ITransport)new TcpTransport() : new UdpTransport();
         INetworkSerializer serializer = new JSONNetSerializer();
         
-        GameObject clientObj = new GameObject($"NetworkClient_{clientName}");
-        clientObj.transform.SetParent(this.transform);
-        NetworkClient client = clientObj.AddComponent<NetworkClient>();
-        
-        // Use reflection to set readonly fields
-        var transportField = typeof(NetworkClient).GetField("_transport", 
-            System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-        var serializerField = typeof(NetworkClient).GetField("_serializer", 
-            System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-        
-        transportField?.SetValue(client, transport);
-        serializerField?.SetValue(client, serializer);
+        NetworkClient client = new NetworkClient(transport, serializer);
+        Debug.Log($"[GameManager] Created {serverType} client: {clientName}");
         
         return client;
     }
@@ -172,20 +161,12 @@ public class GameManager : MonoBehaviour
         if (gameServer != null)
         {
             gameServer.StopServer();
-            if (gameServer.gameObject != null)
-            {
-                Destroy(gameServer.gameObject);
-            }
             gameServer = null;
         }
 
         if (chatServer != null)
         {
             chatServer.StopServer();
-            if (chatServer.gameObject != null)
-            {
-                Destroy(chatServer.gameObject);
-            }
             chatServer = null;
         }
 
@@ -193,27 +174,19 @@ public class GameManager : MonoBehaviour
         if (gameClient != null)
         {
             gameClient.Disconnect();
-            if (gameClient.gameObject != null)
-            {
-                Destroy(gameClient.gameObject);
-            }
             gameClient = null;
         }
 
         if (chatClient != null)
         {
             chatClient.Disconnect();
-            if (chatClient.gameObject != null)
-            {
-                Destroy(chatClient.gameObject);
-            }
             chatClient = null;
         }
     }
 
     private void CleanupNetworkingWithoutDestroy()
     {
-        // Stop servers without destroying GameObjects
+        // Stop servers
         if (gameServer != null)
         {
             gameServer.StopServer();
@@ -226,7 +199,7 @@ public class GameManager : MonoBehaviour
             chatServer = null;
         }
 
-        // Disconnect clients without destroying GameObjects
+        // Disconnect clients
         if (gameClient != null)
         {
             gameClient.Disconnect();

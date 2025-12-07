@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 
-public class NetworkServer : MonoBehaviour
+public class NetworkServer
 {
     // Public NetworkServer Events
     public Action OnServerStarted;
@@ -23,7 +23,7 @@ public class NetworkServer : MonoBehaviour
     // Packet batching per peer
     private Dictionary<int, PacketQueue> _peerQueues;
     
-    [Header("Packet Batching")]
+    // Packet Batching Settings
     public bool enableBatching = true;
     public int maxMessagesPerPacket = 10;
     public float autoFlushInterval = 0.05f;
@@ -32,11 +32,8 @@ public class NetworkServer : MonoBehaviour
     {
         _transport = transport;
         _serializer = serializer;
-    }
-    
-    void Awake()
-    {
-        // Initialize dictionaries in Awake to ensure they're created when MonoBehaviour is instantiated
+        
+        // Initialize dictionaries in constructor
         _connectedPeers = new Dictionary<int, Peer>();
         _peerQueues = new Dictionary<int, PacketQueue>();
     }
@@ -114,6 +111,8 @@ public class NetworkServer : MonoBehaviour
         );
         
         OnPlayerConnected?.Invoke(newPeer);
+
+        Debug.Log($"Client connected: {connectionId}");
     }
 
     private void HandleClientDisconnected(int connectionId)
@@ -158,7 +157,7 @@ public class NetworkServer : MonoBehaviour
         }
     }
     
-    void Update()
+    public void Update()
     {
         // Update all packet queues for timed flushing
         if (_peerQueues != null)

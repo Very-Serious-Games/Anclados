@@ -1,7 +1,7 @@
 using UnityEngine;
 using System;
 
-public class NetworkClient : MonoBehaviour
+public class NetworkClient
 {
     // Events
     public Action OnConnected;
@@ -22,11 +22,8 @@ public class NetworkClient : MonoBehaviour
     {
         _transport = transport;
         _serializer = serializer;
-    }
-    
-    void Awake()
-    {
-        // Initialize packet queue in Awake to ensure it's created when MonoBehaviour is instantiated
+        
+        // Initialize packet queue in constructor
         _packetQueue = new PacketQueue(
             packet => SendPacketImmediate(packet),
             maxMessagesPerPacket,
@@ -111,7 +108,7 @@ public class NetworkClient : MonoBehaviour
         }
     }
     
-    void Update()
+    public void Update()
     {
         // Update packet queue for timed flushing
         _packetQueue?.Update();
