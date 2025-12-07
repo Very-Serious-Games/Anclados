@@ -31,6 +31,12 @@ public class PlayerSpawnManager : MonoBehaviour
             gameServer.OnPlayerConnected += HandleServerPlayerConnected;
             gameServer.OnPlayerDisconnected += HandleServerPlayerDisconnected;
             gameServer.OnMessageReceived += HandleServerMessage;
+            
+            // Handle already-connected peers (connected during lobby)
+            foreach (var peer in gameServer.GetConnectedPeers().Values)
+            {
+                HandleServerPlayerConnected(peer);
+            }
         }
 
         // Subscribe to client events
@@ -64,9 +70,16 @@ public class PlayerSpawnManager : MonoBehaviour
     {
         Debug.Log($"[PlayerSpawnManager - Server] Player connected: {peer.ConnectionId}");
         
-        // Don't spawn yet - wait for JoinMessage with username
-        // Just assign the PlayerId for now
-        peer.PlayerId = nextPlayerId++;
+        // Only assign PlayerId if not already assigned
+        if (peer.PlayerId == -1)
+        {
+            peer.PlayerId = nextPlayerId++;
+            Debug.Log($"[PlayerSpawnManager - Server] Assigned PlayerId {peer.PlayerId} to connection {peer.ConnectionId}");
+        }
+        else
+        {
+            Debug.Log($"[PlayerSpawnManager - Server] Connection {peer.ConnectionId} already has PlayerId {peer.PlayerId}");
+        }
     }
     
     private void SpawnPlayerForPeer(Peer peer, string username)
