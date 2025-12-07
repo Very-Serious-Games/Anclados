@@ -76,20 +76,20 @@ public class PlayerSpawnManager : MonoBehaviour
         Vector3 spawnPos = GetNextSpawnPosition();
         Quaternion spawnRot = Quaternion.identity;
 
+        // IMPORTANT: Send player ID assignment FIRST
+        AssignPlayerIdMessage assignMsg = new AssignPlayerIdMessage(peer.PlayerId);
+        gameServer.Send(peer, assignMsg);
+
         // Spawn player on server
         GameObject playerObj = SpawnPlayerLocal(peer.PlayerId, peer.Username, spawnPos, spawnRot, false);
         peer.PlayerObject = playerObj;
-
-        // Send player ID assignment to this client
-        AssignPlayerIdMessage assignMsg = new AssignPlayerIdMessage(peer.PlayerId);
-        gameServer.Send(peer, assignMsg);
 
         // Tell this client about existing players
         foreach (var existingPeer in gameServer.GetConnectedPeers().Values)
         {
             if (existingPeer.ConnectionId == peer.ConnectionId) continue;
             if (existingPeer.PlayerId == -1) continue;
-            if (!existingPeer.IsPlayerSpawned) continue; // Only send already spawned players
+            if (!existingPeer.IsPlayerSpawned) continue;
 
             SpawnPlayerMessage existingMsg = new SpawnPlayerMessage(
                 existingPeer.PlayerId,
@@ -189,6 +189,26 @@ public class PlayerSpawnManager : MonoBehaviour
         {
             localPlayerId = assignMsg.assignedPlayerId;
             Debug.Log($"[PlayerSpawnManager - Client] Assigned player ID: {localPlayerId}");
+            
+            // If player was already spawned, update the local flag
+            if (spawnedPlayers.TryGetValue(localPlayerId, out GameObject playerObj))
+            {
+                NetworkPlayer netPlayer = playerObj.GetComponent<NetworkPlayer>();
+                NetworkPlayerController controller = playerObj.GetComponent<NetworkPlayerController>();
+                NetworkHealth health = playerObj.GetComponent<NetworkHealth>();
+                // TODO add other components that need local player flag
+                
+                if (netPlayer != null)
+                    netPlayer.isLocalPlayer = true;
+                
+                if (controller != null)
+                    controller.isLocalPlayer = true;
+                
+                if (health != null)
+                    health.isLocalPlayer = true;
+                
+                Debug.Log($"[PlayerSpawnManager - Client] Updated player {localPlayerId} to local player");
+            }
         }
         else if (message is SpawnPlayerMessage spawnMsg)
         {
