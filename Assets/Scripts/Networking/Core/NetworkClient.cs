@@ -71,11 +71,17 @@ public class NetworkClient : MonoBehaviour
     
     private void HandleConnected()
     {
-        // Send join message immediately to announce presence (required for UDP)
+        OnConnected?.Invoke();
+    }
+    
+    /// <summary>
+    /// Send join message to announce presence to server (call this when entering game scene)
+    /// </summary>
+    public void SendJoinMessage()
+    {
         string username = GameManager.Instance?.GetUsername() ?? "Guest";
         Send(new JoinMessage(username));
-        
-        OnConnected?.Invoke();
+        Debug.Log($"[NetworkClient] Sent JoinMessage with username: {username}");
     }
 
     private void HandleDisconnected()

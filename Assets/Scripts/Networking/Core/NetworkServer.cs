@@ -78,6 +78,8 @@ public class NetworkServer : MonoBehaviour
 
     public void Broadcast<T>(T message, Peer excludePeer = null) where T : INetworkMessage
     {
+        if (_connectedPeers == null || _connectedPeers.Count == 0) return;
+        
         byte[] data = _serializer.Serialize(message);
         foreach (var peer in _connectedPeers.Values)
         {

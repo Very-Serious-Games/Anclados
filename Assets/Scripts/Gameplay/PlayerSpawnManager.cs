@@ -37,6 +37,9 @@ public class PlayerSpawnManager : MonoBehaviour
         if (gameClient != null)
         {
             gameClient.OnMessageReceived += HandleClientMessage;
+            
+            // Send join message now that we're in the game scene
+            gameClient.SendJoinMessage();
         }
     }
 
