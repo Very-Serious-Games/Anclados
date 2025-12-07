@@ -149,4 +149,94 @@ public class GameManager : MonoBehaviour
     {
         return username;
     }
+
+    private void OnApplicationQuit()
+    {
+        CleanupNetworking();
+    }
+
+    private void OnDestroy()
+    {
+        // Only cleanup if this is the singleton instance being destroyed
+        if (instance == this)
+        {
+            // Don't call Destroy inside OnDestroy, just disconnect/stop
+            CleanupNetworkingWithoutDestroy();
+            instance = null;
+        }
+    }
+
+    private void CleanupNetworking()
+    {
+        // Stop and cleanup servers
+        if (gameServer != null)
+        {
+            gameServer.StopServer();
+            if (gameServer.gameObject != null)
+            {
+                Destroy(gameServer.gameObject);
+            }
+            gameServer = null;
+        }
+
+        if (chatServer != null)
+        {
+            chatServer.StopServer();
+            if (chatServer.gameObject != null)
+            {
+                Destroy(chatServer.gameObject);
+            }
+            chatServer = null;
+        }
+
+        // Disconnect and cleanup clients
+        if (gameClient != null)
+        {
+            gameClient.Disconnect();
+            if (gameClient.gameObject != null)
+            {
+                Destroy(gameClient.gameObject);
+            }
+            gameClient = null;
+        }
+
+        if (chatClient != null)
+        {
+            chatClient.Disconnect();
+            if (chatClient.gameObject != null)
+            {
+                Destroy(chatClient.gameObject);
+            }
+            chatClient = null;
+        }
+    }
+
+    private void CleanupNetworkingWithoutDestroy()
+    {
+        // Stop servers without destroying GameObjects
+        if (gameServer != null)
+        {
+            gameServer.StopServer();
+            gameServer = null;
+        }
+
+        if (chatServer != null)
+        {
+            chatServer.StopServer();
+            chatServer = null;
+        }
+
+        // Disconnect clients without destroying GameObjects
+        if (gameClient != null)
+        {
+            gameClient.Disconnect();
+            gameClient = null;
+        }
+
+        if (chatClient != null)
+        {
+            chatClient.Disconnect();
+            chatClient = null;
+        }
+    }
 }
