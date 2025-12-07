@@ -82,6 +82,14 @@ public class NetworkServer
 
     public void Broadcast<T>(T message, Peer excludePeer = null) where T : INetworkMessage
     {
+        if (_connectedPeers == null || _connectedPeers.Count == 0)
+        {
+            Debug.LogWarning($"[NetworkServer] Broadcast called but no peers connected. Message type: {typeof(T).Name}");
+            return;
+        }
+        
+        Debug.Log($"[NetworkServer] Broadcasting {typeof(T).Name} to {_connectedPeers.Count} peer(s)");
+        
         byte[] data = _serializer.Serialize(message);
         foreach (var peer in _connectedPeers.Values)
         {
@@ -159,6 +167,16 @@ public class NetworkServer
     
     public void Update()
     {
+        // Print if _connectedPeers is null and the count of connected peers
+        if (_connectedPeers == null)
+        {
+            Debug.LogWarning("[NetworkServer] _connectedPeers is null in Update()");
+        }
+        else
+        {
+            Debug.Log($"[NetworkServer] Connected peers count: {_connectedPeers.Count}");
+        }
+
         // Update all packet queues for timed flushing
         if (_peerQueues != null)
         {

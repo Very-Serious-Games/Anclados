@@ -9,6 +9,12 @@ public class LobbySceneManager : MonoBehaviour
         if (GameManager.Instance.gameClient != null)
         {
             GameManager.Instance.gameClient.OnMessageReceived += HandleClientMessage;
+            
+            // Send lobby join message to announce presence to server (required for UDP)
+            string username = GameManager.Instance.GetUsername() ?? "Guest";
+            LobbyJoinMessage lobbyJoinMsg = new LobbyJoinMessage(username);
+            GameManager.Instance.gameClient.Send(lobbyJoinMsg);
+            Debug.Log($"[LobbySceneManager] Sent LobbyJoinMessage with username: {username}");
         }
     }
 
