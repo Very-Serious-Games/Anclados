@@ -12,7 +12,7 @@ public class CameraManager : MonoBehaviour
     public bool isIsometric = true;
     public float isoAngleX = 60f; // ángulo sobre X (inclinación). Valores mayores = vista más desde arriba
     public float isoAngleY = 45f; // ángulo sobre Y (rotación hacia el mundo)
-    public float orthoSize = 30f;
+    public float orthoSize = 45f;
     private Camera cam;
 
     void LateUpdate()
