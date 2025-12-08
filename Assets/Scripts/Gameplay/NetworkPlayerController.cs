@@ -295,6 +295,8 @@ public class NetworkPlayerController : MonoBehaviour
     /// </summary>
     public void ApplyInputFromServer(PlayerInputMessage input)
     {
+        Debug.Log($"[NetworkPlayerController - SERVER] Player {playerId} received input - F:{input.forward} B:{input.backward} TL:{input.turnLeft} TR:{input.turnRight}");
+        
         // Update current input state from message
         currentInput.forward = input.forward;
         currentInput.backward = input.backward;
@@ -316,7 +318,7 @@ public class NetworkPlayerController : MonoBehaviour
     {
         if (isLocalPlayer)
         {
-            // Client-side reconciliation
+            // Client-side reconciliation for local player
             float dist = Vector3.Distance(transform.position, state.position);
             float angleDiff = Quaternion.Angle(transform.rotation, state.rotation);
 
@@ -325,7 +327,12 @@ public class NetworkPlayerController : MonoBehaviour
                 return;
             }
             
-            Debug.LogWarning($"[NetworkPlayerController] Corrección necesaria. Desviación: {dist:F2}m");
+            Debug.LogWarning($"[NetworkPlayerController] LOCAL player {playerId} correction. Deviation: {dist:F2}m, {angleDiff:F1}°");
+        }
+        else
+        {
+            // Remote player - always apply
+            Debug.Log($"[NetworkPlayerController] REMOTE player {playerId} applying state from server - Pos:{state.position}");
         }
         
         // Apply position/rotation
