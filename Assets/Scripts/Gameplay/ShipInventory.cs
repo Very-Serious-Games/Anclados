@@ -16,6 +16,9 @@ public class ShipInventory : MonoBehaviour
     [Header("Inventory Stats")]
     public int maxStorage = 5;
 
+    [Header("UI Reference")]
+    public ShipInventoryUI inventoryUI;
+
     private Dictionary<ItemType, int> inventory = new Dictionary<ItemType, int>();
 
     //inspector
@@ -67,13 +70,18 @@ public class ShipInventory : MonoBehaviour
         }
 
         //add item
-        if (!inventory.ContainsKey(type))
+        if (inventory.ContainsKey(type))
         {
             inventory[type] += amount;
         }
         else
         {
             inventory.Add(type, amount);
+        }
+
+        if(inventoryUI != null)
+        {
+            inventoryUI.UpdateUI();
         }
 
         Debug.Log($"Recogido {amount} de {type}. Total: {inventory[type]}");
