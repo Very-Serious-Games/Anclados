@@ -143,7 +143,7 @@ public class NetworkHealth : MonoBehaviour
         if (!isLocalPlayer && GameManager.Instance.connectionType != ConnectionType.Host)
             return;
 
-        if (collision.gameObject.CompareTag("Cannonball"))
+        if (collision.gameObject.CompareTag("CannonBall"))
         {
             // Get cannonball owner ID (would need to be stored on cannonball)
             // For now, just apply damage
