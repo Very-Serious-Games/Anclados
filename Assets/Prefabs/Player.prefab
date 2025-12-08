@@ -753,8 +753,8 @@ MonoBehaviour:
   rudderReturnSpeed: 15
   positionThreshold: 3
   rotationThreshold: 15
-  cannonLeft: {fileID: 0}
-  cannonRight: {fileID: 0}
+  cannonLeft: {fileID: 2737682344006975839}
+  cannonRight: {fileID: 4803779412890483999}
   fireLeftKey: 122
   fireRightKey: 120
   fireCooldown: 1.2
