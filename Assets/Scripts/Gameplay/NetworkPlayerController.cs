@@ -32,10 +32,8 @@ public class NetworkPlayerController : MonoBehaviour
     private float rudderAngle = 0f;
 
     [Header("Reconciliation")]
-    public float positionThreshold = 0.5f; // Accept small deviations, blend larger ones
-    public float rotationThreshold = 5.0f;
-    public float interpolationSpeed = 10f; // How fast to lerp to server position
-    public float localCorrectionSpeed = 8f; // Speed for local player corrections
+    public float positionThreshold = 3.0f;
+    public float rotationThreshold = 15.0f;
 
     [Header("Cannons")]
     public Transform cannonLeft;
@@ -54,13 +52,6 @@ public class NetworkPlayerController : MonoBehaviour
     private Rigidbody rb;
     public bool anchorActive = false;
     private bool anchorChanging = false;
-
-    // Interpolation (for both local corrections and remote players)
-    private Vector3 targetPosition;
-    private Quaternion targetRotation;
-    private Vector3 targetVelocity;
-    private bool hasTargetState = false;
-    private bool isLocalCorrection = false; // Use slower lerp for local corrections
 
     // Input state for server processing
     private struct PlayerInput
@@ -102,64 +93,12 @@ public class NetworkPlayerController : MonoBehaviour
         {
             ProcessPhysics();
         }
-        // Clients: local player always processes physics (client prediction)
+        // Clients: only local player processes physics (client prediction)
         else if (isLocalPlayer)
         {
             ProcessPhysics();
-            
-            // If we have a target state (server correction), blend toward it
-            if (hasTargetState)
-            {
-                ApplyLocalCorrection();
-            }
         }
-        else if (hasTargetState)
-        {
-            // Remote players interpolate to server state
-            InterpolateToTargetState();
-        }
-    }
-
-    private void ApplyLocalCorrection()
-    {
-        // Gently blend toward server position without stopping physics
-        float blendFactor = localCorrectionSpeed * Time.fixedDeltaTime;
-        
-        transform.position = Vector3.Lerp(transform.position, targetPosition, blendFactor);
-        transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, blendFactor);
-        
-        // Check if correction is complete
-        float dist = Vector3.Distance(transform.position, targetPosition);
-        if (dist < 0.1f) // Larger threshold since physics is still running
-        {
-            hasTargetState = false;
-            isLocalCorrection = false;
-        }
-    }
-
-    private void InterpolateToTargetState()
-    {
-        // Remote players fully interpolate (no physics running)
-        float speed = interpolationSpeed;
-        
-        // Smoothly interpolate position
-        transform.position = Vector3.Lerp(transform.position, targetPosition, speed * Time.fixedDeltaTime);
-        
-        // Smoothly interpolate rotation
-        transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, speed * Time.fixedDeltaTime);
-        
-        // Smoothly interpolate velocity
-        rb.linearVelocity = Vector3.Lerp(rb.linearVelocity, targetVelocity, speed * Time.fixedDeltaTime);
-        
-        // Check if we're close enough to the target
-        float dist = Vector3.Distance(transform.position, targetPosition);
-        if (dist < 0.01f)
-        {
-            transform.position = targetPosition;
-            transform.rotation = targetRotation;
-            rb.linearVelocity = targetVelocity;
-            hasTargetState = false;
-        }
+        // Remote players on clients apply received state in ApplyNetworkState()
     }
 
     private void CaptureInput()
@@ -356,8 +295,6 @@ public class NetworkPlayerController : MonoBehaviour
     /// </summary>
     public void ApplyInputFromServer(PlayerInputMessage input)
     {
-        Debug.Log($"[NetworkPlayerController - SERVER] Player {playerId} received input - F:{input.forward} B:{input.backward} TL:{input.turnLeft} TR:{input.turnRight}");
-        
         // Update current input state from message
         currentInput.forward = input.forward;
         currentInput.backward = input.backward;
@@ -379,38 +316,22 @@ public class NetworkPlayerController : MonoBehaviour
     {
         if (isLocalPlayer)
         {
-            // Client-side reconciliation for local player
+            // Client-side reconciliation
             float dist = Vector3.Distance(transform.position, state.position);
             float angleDiff = Quaternion.Angle(transform.rotation, state.rotation);
 
-            // Always apply server state, but intensity varies with deviation
-            if (dist > 0.05f || angleDiff > 1.0f) // Very small threshold for continuous correction
+            if (dist < positionThreshold && angleDiff < rotationThreshold)
             {
-                // Use smooth interpolation for local player corrections
-                targetPosition = state.position;
-                targetRotation = state.rotation;
-                targetVelocity = state.velocity;
-                hasTargetState = true;
-                isLocalCorrection = true;
-                
-                if (dist > positionThreshold || angleDiff > rotationThreshold)
-                {
-                    Debug.LogWarning($"[NetworkPlayerController] LOCAL player {playerId} large correction. Deviation: {dist:F2}m, {angleDiff:F1}°");
-                }
+                return;
             }
-        }
-        else
-        {
-            // Remote player - use interpolation for smooth movement
-            Debug.Log($"[NetworkPlayerController] REMOTE player {playerId} setting target state - Pos:{state.position}");
             
-            targetPosition = state.position;
-            targetRotation = state.rotation;
-            targetVelocity = state.velocity;
-            hasTargetState = true;
-            isLocalCorrection = false;
+            Debug.LogWarning($"[NetworkPlayerController] Corrección necesaria. Desviación: {dist:F2}m");
         }
         
+        // Apply position/rotation
+        transform.position = state.position;
+        transform.rotation = state.rotation;
+        rb.linearVelocity = state.velocity;
         anchorActive = state.anchorActive;
     }
 

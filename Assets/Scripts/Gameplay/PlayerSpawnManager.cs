@@ -175,13 +175,9 @@ public class PlayerSpawnManager : MonoBehaviour
             return;
         }
 
-        Debug.Log($"[PlayerSpawnManager - SERVER] Applying input for player {peer.PlayerId} - F:{input.forward} B:{input.backward} TL:{input.turnLeft} TR:{input.turnRight}");
+        Debug.Log($"[PlayerSpawnManager] Processing input for player {peer.PlayerId} - Forward:{input.forward} Backward:{input.backward}");
         // Server applies input to controller for physics processing
         controller.ApplyInputFromServer(input);
-        
-        // IMMEDIATELY broadcast the new state after processing input
-        PlayerStateMessage state = controller.GetCurrentState(input.sequenceNumber);
-        gameServer.Broadcast(state, peer);
     }
 
     private void ProcessFireCannon(Peer peer, FireCannonMessage fireMsg)
@@ -257,12 +253,7 @@ public class PlayerSpawnManager : MonoBehaviour
         if (spawnedPlayers.TryGetValue(state.playerId, out GameObject playerObj))
         {
             NetworkPlayerController controller = playerObj.GetComponent<NetworkPlayerController>();
-            if (controller != null)
-            {
-                bool isLocal = controller.isLocalPlayer;
-                Debug.Log($"[PlayerSpawnManager - CLIENT] Applying state for player {state.playerId} - IsLocal:{isLocal} Pos:{state.position}");
-                controller.ApplyNetworkState(state);
-            }
+            controller?.ApplyNetworkState(state);
         }
     }
 
@@ -351,13 +342,11 @@ public class PlayerSpawnManager : MonoBehaviour
 
         foreach (var kvp in spawnedPlayers)
         {
-            int playerId = kvp.Key;
             NetworkPlayerController controller = kvp.Value.GetComponent<NetworkPlayerController>();
             if (controller != null)
             {
                 PlayerStateMessage stateMsg = controller.GetCurrentState(0);
                 gameServer.Broadcast(stateMsg);
-                Debug.Log($"[PlayerSpawnManager - SERVER] Broadcasting state for player {playerId} - Pos:{stateMsg.position}");
             }
         }
     }
