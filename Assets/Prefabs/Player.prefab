@@ -495,6 +495,9 @@ GameObject:
   - component: {fileID: 9054590302059803704}
   - component: {fileID: 4445855345702529715}
   - component: {fileID: 335139037443951349}
+  - component: {fileID: -6615658092017377109}
+  - component: {fileID: -5933856342260737987}
+  - component: {fileID: 2808470585674414328}
   m_Layer: 0
   m_Name: Player
   m_TagString: Untagged
@@ -706,6 +709,75 @@ MeshCollider:
   m_Convex: 1
   m_CookingOptions: 30
   m_Mesh: {fileID: -2186164198582519963, guid: ca8448b895fd0ddb79df5bf5942a692a, type: 3}
+--- !u!114 &-6615658092017377109
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6025429379792614025}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 61a58f26af05f29bd945a8dee6ede9e1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  playerId: -1
+  isLocalPlayer: 0
+  username: 
+  connectionId: -1
+  spawnTime: 0
+--- !u!114 &-5933856342260737987
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6025429379792614025}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1160ace2bb7b4469a96db68a490959d2, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  isLocalPlayer: 0
+  playerId: -1
+  acceleration: 8
+  maxSpeed: 12
+  reverseSpeed: 4
+  dragWater: 0.8
+  anchorKey: 102
+  anchorDropTime: 2
+  anchorLiftTime: 2
+  anchorExtraDrag: 10
+  rudderMaxAngle: 35
+  rudderChangeSpeed: 40
+  rudderReturnSpeed: 15
+  positionThreshold: 3
+  rotationThreshold: 15
+  cannonLeft: {fileID: 0}
+  cannonRight: {fileID: 0}
+  fireLeftKey: 122
+  fireRightKey: 120
+  fireCooldown: 1.2
+  lateralDrag: 2
+  lockHeight: 1
+  anchorActive: 0
+--- !u!114 &2808470585674414328
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6025429379792614025}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 48538eb504f645ac9a16638ad65a73d9, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  maxHealth: 100
+  currentHealth: 100
+  isLocalPlayer: 0
+  playerId: -1
+  healthBar: {fileID: 0}
 --- !u!1 &7727196417797911921
 GameObject:
   m_ObjectHideFlags: 0
