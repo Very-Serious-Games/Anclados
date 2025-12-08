@@ -4,7 +4,7 @@ public class CameraManager : MonoBehaviour
 {
     public Transform target;      // El barco
     // Por defecto la cámara estará centrada sobre el barco (misma X,Z) y más alta
-    public Vector3 offset = new Vector3(0, 0, 0);
+    public Vector3 offset = new Vector3(0, 20, 0);
     public float followSpeed = 3f;
     public float rotateSpeed = 2f;
     public float smoothTime = 0.3f;
