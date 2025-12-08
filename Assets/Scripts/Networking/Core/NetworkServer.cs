@@ -166,16 +166,6 @@ public class NetworkServer
     
     public void Update()
     {
-        // Print if _connectedPeers is null and the count of connected peers
-        if (_connectedPeers == null)
-        {
-            Debug.LogWarning("[NetworkServer] _connectedPeers is null in Update()");
-        }
-        else
-        {
-            Debug.Log($"[NetworkServer] Connected peers count: {_connectedPeers.Count}");
-        }
-
         // Update all packet queues for timed flushing
         if (_peerQueues != null)
         {
