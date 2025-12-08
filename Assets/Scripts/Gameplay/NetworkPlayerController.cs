@@ -31,6 +31,10 @@ public class NetworkPlayerController : MonoBehaviour
     public float rudderReturnSpeed = 15f;
     private float rudderAngle = 0f;
 
+    [Header("Reconciliation")]
+    public float positionThreshold = 3.0f;
+    public float rotationThreshold = 15.0f;
+
     [Header("Cannons")]
     public Transform cannonLeft;
     public Transform cannonRight;
@@ -312,8 +316,16 @@ public class NetworkPlayerController : MonoBehaviour
     {
         if (isLocalPlayer)
         {
-            // Client-side reconciliation (optional - for now just trust server)
-            // TODO: Compare lastProcessedInput with local predictions
+            // Client-side reconciliation
+            float dist = Vector3.Distance(transform.position, state.position);
+            float angleDiff = Quaternion.Angle(transform.rotation, state.rotation);
+
+            if (dist < positionThreshold && angleDiff < rotationThreshold)
+            {
+                return;
+            }
+            
+            Debug.LogWarning($"[NetworkPlayerController] Corrección necesaria. Desviación: {dist:F2}m");
         }
         
         // Apply position/rotation
