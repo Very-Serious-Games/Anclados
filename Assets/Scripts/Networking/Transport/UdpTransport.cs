@@ -31,6 +31,7 @@ public class UdpTransport : ITransport
     private IPEndPoint serverEndPoint;
     bool connectedToServer = false;
 
+    private const int MaxBufferSize = 8192;
 
     // --- Server Functions ---
 
@@ -75,7 +76,7 @@ public class UdpTransport : ITransport
         {
             try
             {
-                byte[] buffer = new byte[1024];
+                byte[] buffer = new byte[MaxBufferSize];
                 var result = await socket.ReceiveFromAsync(buffer, SocketFlags.None, remoteEp);
                 IPEndPoint clientEp = (IPEndPoint)result.RemoteEndPoint;
 
@@ -143,7 +144,7 @@ public class UdpTransport : ITransport
         {
             try
             {
-                byte[] buffer = new byte[1024];
+                byte[] buffer = new byte[MaxBufferSize];
                 var result = await socket.ReceiveFromAsync(buffer, SocketFlags.None, remoteEp);
 
                 if (result.RemoteEndPoint.Equals(serverEndPoint))
