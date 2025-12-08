@@ -1,5 +1,6 @@
 using UnityEngine;
 using System.Collections.Generic;
+using TMPro;
 
 public class ShipInventory : MonoBehaviour
 {
@@ -24,6 +25,20 @@ public class ShipInventory : MonoBehaviour
     //inspector
     public List<InventorySlot> debugInventoryList = new List<InventorySlot>();
 
+    [Header("Currency")]
+    public int currentGold = 0;
+    public TextMeshProUGUI goldText;
+
+    //valor de cada item
+    public Dictionary<ItemType, int> itemPrices = new Dictionary<ItemType, int>()
+    {
+        {ItemType.GoldChest, 500 },
+        {ItemType.GoldBag, 100 },
+        //otros items no dan dinero
+        {ItemType.Alcohol, 0 },
+        {ItemType.Boot, 0 }
+    };
+
     private void Start()
     {
         //inicializar los tiposde item a 0?
@@ -34,6 +49,8 @@ public class ShipInventory : MonoBehaviour
                 inventory[type] = 0;
             }
         }
+        
+        UpdateGoldUI();
     }
 
     //despres aixo ho borro
@@ -92,5 +109,39 @@ public class ShipInventory : MonoBehaviour
     public int GetItemCount(ItemType type)
     {
         return inventory.ContainsKey(type) ? inventory[type] : 0;
+    }
+
+    public void AddGold(int amount)
+    {
+        currentGold += amount;
+        UpdateGoldUI();
+    }
+
+    private void UpdateGoldUI()
+    {
+        if (goldText != null)
+        {
+            goldText.text = $"Gold: {currentGold}";
+        }
+    }
+
+    //restar items al vender
+    public void RemoveItem(ItemType type, int amount = 1)
+    {
+        if (inventory.ContainsKey(type) && inventory[type] >= amount)
+        {
+            inventory[type] -= amount;
+                        
+            if (inventoryUI != null)
+            {
+                inventoryUI.UpdateUI();
+            }
+
+            if (inventory[type] == 0)
+            {
+                // Limpieza si el total llega a cero
+                inventory.Remove(type); // Opcional, si quiero q no aparezca en el diccionario
+            }
+        }
     }
 }

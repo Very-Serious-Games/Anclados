@@ -42,6 +42,9 @@ public class PlayerMovement : MonoBehaviour
     private bool anchorActive = false;
     private bool anchorChanging = false;
 
+    [HideInInspector]
+    public bool isDocked = false;
+
     void Start()
     {
         rb = GetComponent<Rigidbody>();
@@ -54,6 +57,11 @@ public class PlayerMovement : MonoBehaviour
 
     void Update()
     {
+        if (isDocked)
+        {
+            return;
+        }
+
         if (Input.GetKeyDown(anchorKey) && !anchorChanging)
         {
             StartCoroutine(ToggleAnchor());
