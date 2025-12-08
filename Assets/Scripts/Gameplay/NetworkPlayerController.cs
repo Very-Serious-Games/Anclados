@@ -32,10 +32,10 @@ public class NetworkPlayerController : MonoBehaviour
     private float rudderAngle = 0f;
 
     [Header("Reconciliation")]
-    public float positionThreshold = 3.0f;
-    public float rotationThreshold = 15.0f;
+    public float positionThreshold = 0.5f; // Accept small deviations, blend larger ones
+    public float rotationThreshold = 5.0f;
     public float interpolationSpeed = 10f; // How fast to lerp to server position
-    public float localCorrectionSpeed = 5f; // Slower lerp for local player corrections
+    public float localCorrectionSpeed = 8f; // Speed for local player corrections
 
     [Header("Cannons")]
     public Transform cannonLeft;
@@ -383,19 +383,21 @@ public class NetworkPlayerController : MonoBehaviour
             float dist = Vector3.Distance(transform.position, state.position);
             float angleDiff = Quaternion.Angle(transform.rotation, state.rotation);
 
-            if (dist < positionThreshold && angleDiff < rotationThreshold)
+            // Always apply server state, but intensity varies with deviation
+            if (dist > 0.05f || angleDiff > 1.0f) // Very small threshold for continuous correction
             {
-                return;
+                // Use smooth interpolation for local player corrections
+                targetPosition = state.position;
+                targetRotation = state.rotation;
+                targetVelocity = state.velocity;
+                hasTargetState = true;
+                isLocalCorrection = true;
+                
+                if (dist > positionThreshold || angleDiff > rotationThreshold)
+                {
+                    Debug.LogWarning($"[NetworkPlayerController] LOCAL player {playerId} large correction. Deviation: {dist:F2}m, {angleDiff:F1}°");
+                }
             }
-            
-            Debug.LogWarning($"[NetworkPlayerController] LOCAL player {playerId} correction. Deviation: {dist:F2}m, {angleDiff:F1}°");
-            
-            // Use smooth interpolation for local player corrections instead of snapping
-            targetPosition = state.position;
-            targetRotation = state.rotation;
-            targetVelocity = state.velocity;
-            hasTargetState = true;
-            isLocalCorrection = true; // Flag to use slower lerp speed
         }
         else
         {
