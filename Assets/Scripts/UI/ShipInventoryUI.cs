@@ -57,12 +57,18 @@ public class ShipInventoryUI : MonoBehaviour
     private void UpdateSlotText(ShipInventory.ItemType type, int count, GameObject slot = null)
     {        
         GameObject slotToUpdate = slot ?? itemSlots[type];
-                
-        Text textComponent = slotToUpdate.GetComponentInChildren<Text>();
 
-        if (textComponent != null)
+        //Text textComponent = slotToUpdate.GetComponentInChildren<Text>();
+
+        //if (textComponent != null)
+        //{
+        //    textComponent.text = $"{type.ToString()}: **{count}**";
+        //}
+        SlotUI slotComponent = slotToUpdate.GetComponent<SlotUI>();
+
+        if (slotComponent != null)
         {
-            textComponent.text = $"{type.ToString()}: **{count}**";
+            slotComponent.SetText($"- {type.ToString()}: {count}");
         }
     }
 
