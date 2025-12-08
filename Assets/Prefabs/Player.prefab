@@ -440,11 +440,11 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   target: {fileID: 6401146365166872627}
-  offset: {x: 0, y: 22, z: 0}
+  offset: {x: 0, y: 45, z: -50}
   followSpeed: 3
   rotateSpeed: 2
   smoothTime: 0.3
-  isIsometric: 1
+  isIsometric: 0
   isoAngleX: 60
   isoAngleY: 45
   orthoSize: 45
