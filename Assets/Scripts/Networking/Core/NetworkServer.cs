@@ -90,13 +90,12 @@ public class NetworkServer
         
         Debug.Log($"[NetworkServer] Broadcasting {typeof(T).Name} to {_connectedPeers.Count} peer(s)");
         
-        byte[] data = _serializer.Serialize(message);
         foreach (var peer in _connectedPeers.Values)
         {
             if (excludePeer != null && peer.ConnectionId == excludePeer.ConnectionId)
                 continue;
 
-            _transport.SendToClient(peer.ConnectionId, data);
+            Send(peer, message);
         }
     }
 

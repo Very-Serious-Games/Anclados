@@ -120,6 +120,9 @@ public class PlayerSpawnManager : MonoBehaviour
         SpawnPlayerMessage spawnMsg = new SpawnPlayerMessage(peer.PlayerId, peer.Username, spawnPos, spawnRot);
         gameServer.Broadcast(spawnMsg, peer);
         
+        // Also send the spawn message to the new player so they spawn themselves
+        gameServer.Send(peer, spawnMsg);
+        
         Debug.Log($"[PlayerSpawnManager - Server] Spawned player {peer.PlayerId} at {spawnPos}");
     }
 
