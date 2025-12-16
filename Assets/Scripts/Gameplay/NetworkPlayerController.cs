@@ -14,35 +14,25 @@ public class NetworkPlayerController : MonoBehaviour
     private int inputSequenceNumber = 0;
 
     [Header("Movement")]
-    public float acceleration = 8f;
-    public float maxSpeed = 12f;
-    public float reverseSpeed = 4f;
-    public float dragWater = 0.8f;
-
-    [Header("Anchor")]
-    public KeyCode anchorKey = KeyCode.F;
-    public float anchorDropTime = 2f;
-    public float anchorLiftTime = 2f;
-    public float anchorExtraDrag = 10f;
+    public float moveSpeed = 18f;
+    public float acceleration = 14f;
+    public float deceleration = 12f;
 
     [Header("Rudder")]
     public float rudderMaxAngle = 35f;
-    public float rudderChangeSpeed = 40f;
-    public float rudderReturnSpeed = 15f;
-    private float rudderAngle = 0f;
+    public float rudderChangeSpeed = 60f;
+    public float rudderReturnSpeed = 35f;
+    public float turnSpeed = 90f;
+    private float rudderAngle;
+
+    [Header("Anchor")]
+    public KeyCode anchorKey = KeyCode.F;
+    public float anchorDropTime = 1.5f;
+    public float anchorLiftTime = 1.5f;
 
     [Header("Reconciliation")]
-    public float positionThreshold = 3.0f;
-    public float rotationThreshold = 15.0f;
-
-    [Header("Cannons")]
-    public Transform cannonLeft;
-    public Transform cannonRight;
-    public KeyCode fireLeftKey = KeyCode.Z;
-    public KeyCode fireRightKey = KeyCode.X;
-    public float fireCooldown = 1.2f;
-    private float nextFireLeft = 0f;
-    private float nextFireRight = 0f;
+    public float positionThreshold = 3f;
+    public float rotationThreshold = 15f;
 
     [Header("Behavior")]
     public float lateralDrag = 2f;
@@ -57,8 +47,9 @@ public class NetworkPlayerController : MonoBehaviour
     private struct PlayerInput
     {
         public bool forward, backward, turnLeft, turnRight;
-        public bool anchorToggle, fireLeft, fireRight;
+        public bool anchorToggle;
     }
+
     private PlayerInput currentInput;
 
     void Start()
@@ -76,14 +67,9 @@ public class NetworkPlayerController : MonoBehaviour
         {
             // Capture input
             CaptureInput();
-            
             // Send input to server
             SendInputToServer();
-            
-            // Handle cannons locally (will validate on server)
-            HandleCannons();
         }
-        // Remote players don't process input
     }
 
     void FixedUpdate()
@@ -105,9 +91,9 @@ public class NetworkPlayerController : MonoBehaviour
     {
         currentInput.forward = Input.GetKey(KeyCode.W);
         currentInput.backward = Input.GetKey(KeyCode.S);
-        currentInput.turnLeft = Input.GetKey(KeyCode.Q);
-        currentInput.turnRight = Input.GetKey(KeyCode.E);
-        
+        currentInput.turnLeft = Input.GetKey(KeyCode.A);
+        currentInput.turnRight = Input.GetKey(KeyCode.D);
+
         if (Input.GetKeyDown(anchorKey) && !anchorChanging)
         {
             currentInput.anchorToggle = true;
@@ -126,8 +112,8 @@ public class NetworkPlayerController : MonoBehaviour
         // Only send if there's actual input
         bool hasInput = currentInput.forward || currentInput.backward || 
                        currentInput.turnLeft || currentInput.turnRight || 
-                       currentInput.anchorToggle || currentInput.fireLeft || currentInput.fireRight;
-        
+                       currentInput.anchorToggle;
+
         if (!hasInput) return;
 
         PlayerInputMessage inputMsg = new PlayerInputMessage(
@@ -137,32 +123,22 @@ public class NetworkPlayerController : MonoBehaviour
             currentInput.turnLeft,
             currentInput.turnRight,
             currentInput.anchorToggle,
-            currentInput.fireLeft,
-            currentInput.fireRight,
             Time.time,
             inputSequenceNumber++
         );
 
         Debug.Log($"[NetworkPlayerController] Sending input to server - Forward:{currentInput.forward} Backward:{currentInput.backward}");
         GameManager.Instance.gameClient.Send(inputMsg);
-        
-        // Reset one-shot inputs
-        currentInput.fireLeft = false;
-        currentInput.fireRight = false;
     }
 
     private void ProcessPhysics()
     {
         if (!anchorActive && !anchorChanging)
         {
-            ApplyForwardMovement(currentInput.forward, currentInput.backward);
-            ApplyRotation(currentInput.turnLeft, currentInput.turnRight);
-            ApplyWaterResistance();
+            HandleMovement();
+            HandleRudder();
+            HandleRotation();
             ApplyLateralDamping();
-        }
-        else
-        {
-            ApplyAnchorStop();
         }
     }
 
@@ -184,68 +160,48 @@ public class NetworkPlayerController : MonoBehaviour
         anchorChanging = false;
     }
 
-    private void ApplyAnchorStop()
+    private void HandleMovement()
     {
-        Vector3 horizontalVel = new Vector3(rb.linearVelocity.x, 0, rb.linearVelocity.z);
-        Vector3 drag = -horizontalVel * anchorExtraDrag * Time.fixedDeltaTime;
-        rb.AddForce(drag, ForceMode.VelocityChange);
+        float v = 0f;
+        if (currentInput.forward) v += 1f;
+        if (currentInput.backward) v -= 1f;
+
+        Vector3 desiredVelocity = transform.forward * v * moveSpeed;
+        Vector3 currentVelocity = new Vector3(rb.linearVelocity.x, 0f, rb.linearVelocity.z);
+
+        float accel = Mathf.Abs(v) > 0.01f ? acceleration : deceleration;
+
+        Vector3 newVelocity = Vector3.MoveTowards(
+            currentVelocity,
+            desiredVelocity,
+            accel * Time.fixedDeltaTime
+        );
+
+        rb.linearVelocity = new Vector3(newVelocity.x, rb.linearVelocity.y, newVelocity.z);
     }
 
-    private void ApplyForwardMovement(bool forward, bool backward)
+    private void HandleRudder()
     {
-        float currentSpeed = Vector3.Dot(rb.linearVelocity, transform.forward);
-        float targetSpeed = currentSpeed;
+        float h = 0f;
+        if (currentInput.turnRight) h += 1f;
+        if (currentInput.turnLeft) h -= 1f;
 
-        if (forward)
-        {
-            targetSpeed = Mathf.Min(currentSpeed + acceleration * Time.fixedDeltaTime, maxSpeed);
-        }
-        else if (backward)
-        {
-            targetSpeed = Mathf.Max(currentSpeed - acceleration * Time.fixedDeltaTime, -reverseSpeed);
-        }
+        if (Mathf.Abs(h) > 0.01f)
+            rudderAngle += h * rudderChangeSpeed * Time.fixedDeltaTime;
         else
-        {
-            targetSpeed = Mathf.MoveTowards(currentSpeed, 0f, acceleration * 0.4f * Time.fixedDeltaTime);
-        }
-
-        float delta = targetSpeed - currentSpeed;
-        Vector3 force = transform.forward * delta;
-        force.y = 0;
-
-        rb.AddForce(force, ForceMode.VelocityChange);
-    }
-
-    private void ApplyRotation(bool turnLeft, bool turnRight)
-    {
-        float input = 0f;
-
-        if (turnRight) input += 1f;
-        if (turnLeft) input -= 1f;
-
-        if (input != 0)
-        {
-            rudderAngle += input * rudderChangeSpeed * Time.fixedDeltaTime;
-        }
-        else
-        {
             rudderAngle = Mathf.MoveTowards(rudderAngle, 0f, rudderReturnSpeed * Time.fixedDeltaTime);
-        }
 
         rudderAngle = Mathf.Clamp(rudderAngle, -rudderMaxAngle, rudderMaxAngle);
-
-        float speedFactor = Mathf.Clamp01(rb.linearVelocity.magnitude / maxSpeed);
-        float turnAmount = rudderAngle * speedFactor * Time.fixedDeltaTime;
-
-        Quaternion deltaRot = Quaternion.Euler(0f, turnAmount, 0f);
-        rb.MoveRotation(rb.rotation * deltaRot);
     }
 
-    private void ApplyWaterResistance()
+    private void HandleRotation()
     {
-        Vector3 horizontalVel = new Vector3(rb.linearVelocity.x, 0, rb.linearVelocity.z);
-        Vector3 drag = -horizontalVel * dragWater * Time.fixedDeltaTime;
-        rb.AddForce(drag, ForceMode.VelocityChange);
+        float speedFactor = Mathf.Clamp01(rb.linearVelocity.magnitude / moveSpeed);
+        float rudderNormalized = rudderAngle / rudderMaxAngle;
+
+        float turnAmount = rudderNormalized * turnSpeed * speedFactor * Time.fixedDeltaTime;
+
+        rb.MoveRotation(rb.rotation * Quaternion.Euler(0f, turnAmount, 0f));
     }
 
     private void ApplyLateralDamping()
@@ -253,41 +209,6 @@ public class NetworkPlayerController : MonoBehaviour
         Vector3 lateral = Vector3.Dot(rb.linearVelocity, transform.right) * transform.right;
         Vector3 force = -lateral * lateralDrag * Time.fixedDeltaTime;
         rb.AddForce(force, ForceMode.VelocityChange);
-    }
-
-    private void HandleCannons()
-    {
-        if (Input.GetKeyDown(fireLeftKey) && Time.time >= nextFireLeft)
-        {
-            currentInput.fireLeft = true;
-            RequestFireCannon(true);
-            nextFireLeft = Time.time + fireCooldown;
-        }
-
-        if (Input.GetKeyDown(fireRightKey) && Time.time >= nextFireRight)
-        {
-            currentInput.fireRight = true;
-            RequestFireCannon(false);
-            nextFireRight = Time.time + fireCooldown;
-        }
-    }
-
-    private void RequestFireCannon(bool isLeft)
-    {
-        if (GameManager.Instance.gameClient == null) return;
-
-        Transform cannon = isLeft ? cannonLeft : cannonRight;
-        if (cannon == null) return;
-
-        FireCannonMessage fireMsg = new FireCannonMessage(
-            playerId,
-            isLeft,
-            cannon.position,
-            cannon.forward,
-            Time.time
-        );
-
-        GameManager.Instance.gameClient.Send(fireMsg);
     }
 
     /// <summary>
@@ -301,12 +222,10 @@ public class NetworkPlayerController : MonoBehaviour
         currentInput.turnLeft = input.turnLeft;
         currentInput.turnRight = input.turnRight;
         currentInput.anchorToggle = input.anchorToggle;
-        
+
         // Handle anchor toggle
         if (input.anchorToggle && !anchorChanging)
-        {
             StartCoroutine(ToggleAnchor());
-        }
     }
 
     /// <summary>
@@ -327,7 +246,7 @@ public class NetworkPlayerController : MonoBehaviour
             
             Debug.LogWarning($"[NetworkPlayerController] Corrección necesaria. Desviación: {dist:F2}m");
         }
-        
+
         // Apply position/rotation
         transform.position = state.position;
         transform.rotation = state.rotation;

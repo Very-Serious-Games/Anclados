@@ -21,19 +21,13 @@ public struct PlayerInputMessage : INetworkMessage
     public bool anchorToggle;
     
     [SerializeField]
-    public bool fireLeft;
-    
-    [SerializeField]
-    public bool fireRight;
-    
-    [SerializeField]
     public float timestamp;
     
     [SerializeField]
     public int sequenceNumber;
 
     public PlayerInputMessage(int playerId, bool forward, bool backward, bool turnLeft, bool turnRight, 
-                             bool anchorToggle, bool fireLeft, bool fireRight, float timestamp, int sequenceNumber)
+                             bool anchorToggle, float timestamp, int sequenceNumber)
     {
         this.playerId = playerId;
         this.forward = forward;
@@ -41,8 +35,6 @@ public struct PlayerInputMessage : INetworkMessage
         this.turnLeft = turnLeft;
         this.turnRight = turnRight;
         this.anchorToggle = anchorToggle;
-        this.fireLeft = fireLeft;
-        this.fireRight = fireRight;
         this.timestamp = timestamp;
         this.sequenceNumber = sequenceNumber;
     }
