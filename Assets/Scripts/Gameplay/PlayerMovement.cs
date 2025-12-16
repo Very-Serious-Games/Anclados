@@ -5,8 +5,8 @@ public class PlayerMovement : MonoBehaviour
 {
     [Header("Movement")]
     public float moveSpeed = 18f;
-    public float acceleration = 30f;
-    public float braking = 40f;
+    public float acceleration = 14f;
+    public float deceleration = 12f;
 
     [Header("Rudder")]
     public float rudderMaxAngle = 35f;
@@ -47,7 +47,7 @@ public class PlayerMovement : MonoBehaviour
     {
         if (anchorActive || anchorChanging)
         {
-            rb.linearVelocity = Vector3.Lerp(rb.linearVelocity, Vector3.zero, Time.fixedDeltaTime * 6f);
+            rb.linearVelocity = Vector3.Lerp(rb.linearVelocity, Vector3.zero, Time.fixedDeltaTime * 4f);
             return;
         }
 
@@ -77,13 +77,18 @@ public class PlayerMovement : MonoBehaviour
     {
         float v = Input.GetAxisRaw("Vertical");
 
-        Vector3 targetVelocity = transform.forward * v * moveSpeed;
+        Vector3 desiredVelocity = transform.forward * v * moveSpeed;
+        Vector3 currentVelocity = new Vector3(rb.linearVelocity.x, 0f, rb.linearVelocity.z);
 
-        rb.linearVelocity = Vector3.MoveTowards(
-            new Vector3(rb.linearVelocity.x, 0f, rb.linearVelocity.z),
-            targetVelocity,
-            acceleration * Time.fixedDeltaTime
+        float accel = Mathf.Abs(v) > 0.01f ? acceleration : deceleration;
+
+        Vector3 newVelocity = Vector3.MoveTowards(
+            currentVelocity,
+            desiredVelocity,
+            accel * Time.fixedDeltaTime
         );
+
+        rb.linearVelocity = new Vector3(newVelocity.x, rb.linearVelocity.y, newVelocity.z);
     }
 
     private void HandleRudderInput()

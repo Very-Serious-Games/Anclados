@@ -430,9 +430,49 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 0}
     m_Modifications:
+    - target: {fileID: -5933856342260737987, guid: ac101a558ba01bb4dacaec4e20cc978c, type: 3}
+      propertyPath: cannonLeft
+      value: 
+      objectReference: {fileID: 0}
+    - target: {fileID: -5933856342260737987, guid: ac101a558ba01bb4dacaec4e20cc978c, type: 3}
+      propertyPath: cannonRight
+      value: 
+      objectReference: {fileID: 0}
+    - target: {fileID: 1802882211999620650, guid: ac101a558ba01bb4dacaec4e20cc978c, type: 3}
+      propertyPath: acceleration
+      value: 14
+      objectReference: {fileID: 0}
+    - target: {fileID: 1802882211999620650, guid: ac101a558ba01bb4dacaec4e20cc978c, type: 3}
+      propertyPath: deceleration
+      value: 12
+      objectReference: {fileID: 0}
+    - target: {fileID: 1802882211999620650, guid: ac101a558ba01bb4dacaec4e20cc978c, type: 3}
+      propertyPath: anchorDropTime
+      value: 1.5
+      objectReference: {fileID: 0}
+    - target: {fileID: 1802882211999620650, guid: ac101a558ba01bb4dacaec4e20cc978c, type: 3}
+      propertyPath: anchorLiftTime
+      value: 1.5
+      objectReference: {fileID: 0}
+    - target: {fileID: 1802882211999620650, guid: ac101a558ba01bb4dacaec4e20cc978c, type: 3}
+      propertyPath: rudderChangeSpeed
+      value: 60
+      objectReference: {fileID: 0}
+    - target: {fileID: 1802882211999620650, guid: ac101a558ba01bb4dacaec4e20cc978c, type: 3}
+      propertyPath: rudderReturnSpeed
+      value: 35
+      objectReference: {fileID: 0}
     - target: {fileID: 2737682344006975839, guid: ac101a558ba01bb4dacaec4e20cc978c, type: 3}
       propertyPath: m_LocalPosition.x
       value: -2.669
+      objectReference: {fileID: 0}
+    - target: {fileID: 3941253087722260274, guid: ac101a558ba01bb4dacaec4e20cc978c, type: 3}
+      propertyPath: maxHealth
+      value: 3
+      objectReference: {fileID: 0}
+    - target: {fileID: 3941253087722260274, guid: ac101a558ba01bb4dacaec4e20cc978c, type: 3}
+      propertyPath: currentHealth
+      value: 3
       objectReference: {fileID: 0}
     - target: {fileID: 4445855345702529715, guid: ac101a558ba01bb4dacaec4e20cc978c, type: 3}
       propertyPath: m_Camera
@@ -487,7 +527,9 @@ PrefabInstance:
       value: 0
       objectReference: {fileID: 0}
     m_RemovedComponents: []
-    m_RemovedGameObjects: []
+    m_RemovedGameObjects:
+    - {fileID: 5213950065762232712, guid: ac101a558ba01bb4dacaec4e20cc978c, type: 3}
+    - {fileID: 6013447231927779370, guid: ac101a558ba01bb4dacaec4e20cc978c, type: 3}
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: ac101a558ba01bb4dacaec4e20cc978c, type: 3}
