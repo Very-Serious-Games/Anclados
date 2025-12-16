@@ -22,6 +22,9 @@ public struct PlayerStateMessage : INetworkMessage
     
     [SerializeField]
     public int lastProcessedInput;
+    
+    [SerializeField]
+    public int stateSequence;
 
     public PlayerStateMessage(int playerId, Vector3 position, Quaternion rotation, Vector3 velocity, 
                              bool anchorActive, float timestamp, int lastProcessedInput)
@@ -33,5 +36,6 @@ public struct PlayerStateMessage : INetworkMessage
         this.anchorActive = anchorActive;
         this.timestamp = timestamp;
         this.lastProcessedInput = lastProcessedInput;
+        this.stateSequence = 0; // Will be set by sender
     }
 }

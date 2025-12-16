@@ -20,6 +20,14 @@ public class PlayerSpawnManager : MonoBehaviour
     private NetworkServer gameServer;
     private NetworkClient gameClient;
 
+    // ACK System - Track state sequence numbers
+    private Dictionary<int, int> lastAckedStateSequence = new Dictionary<int, int>();
+    private Dictionary<int, int> currentStateSequence = new Dictionary<int, int>();
+    
+    // Track unacknowledged states per player
+    private Dictionary<int, Queue<PlayerStateMessage>> unackedStates = new Dictionary<int, Queue<PlayerStateMessage>>();
+    private const int MAX_UNACKED_STATES = 10; // Limit memory usage
+
     void Start()
     {
         gameServer = GameManager.Instance.gameServer;
@@ -80,6 +88,14 @@ public class PlayerSpawnManager : MonoBehaviour
         {
             Debug.Log($"[PlayerSpawnManager - Server] Connection {peer.ConnectionId} already has PlayerId {peer.PlayerId}");
         }
+        
+        // Initialize ACK tracking for this player
+        if (!lastAckedStateSequence.ContainsKey(peer.PlayerId))
+        {
+            lastAckedStateSequence[peer.PlayerId] = 0;
+            currentStateSequence[peer.PlayerId] = 0;
+            unackedStates[peer.PlayerId] = new Queue<PlayerStateMessage>();
+        }
     }
     
     private void SpawnPlayerForPeer(Peer peer, string username)
@@ -92,15 +108,15 @@ public class PlayerSpawnManager : MonoBehaviour
         Vector3 spawnPos = GetNextSpawnPosition();
         Quaternion spawnRot = Quaternion.identity;
 
-        // IMPORTANT: Send player ID assignment FIRST
+        // IMPORTANT: Send player ID assignment FIRST with reliable delivery
         AssignPlayerIdMessage assignMsg = new AssignPlayerIdMessage(peer.PlayerId);
-        gameServer.Send(peer, assignMsg);
+        gameServer.SendReliable(peer, assignMsg);
 
         // Spawn player on server
         GameObject playerObj = SpawnPlayerLocal(peer.PlayerId, peer.Username, spawnPos, spawnRot, false);
         peer.PlayerObject = playerObj;
 
-        // Tell this client about existing players
+        // Tell this client about existing players (reliable)
         foreach (var existingPeer in gameServer.GetConnectedPeers().Values)
         {
             if (existingPeer.ConnectionId == peer.ConnectionId) continue;
@@ -113,15 +129,15 @@ public class PlayerSpawnManager : MonoBehaviour
                 existingPeer.PlayerObject.transform.position,
                 existingPeer.PlayerObject.transform.rotation
             );
-            gameServer.Send(peer, existingMsg);
+            gameServer.SendReliable(peer, existingMsg);
         }
 
-        // Broadcast new player to all other clients
+        // Broadcast new player to all other clients (reliable)
         SpawnPlayerMessage spawnMsg = new SpawnPlayerMessage(peer.PlayerId, peer.Username, spawnPos, spawnRot);
-        gameServer.Broadcast(spawnMsg, peer);
+        gameServer.BroadcastReliable(spawnMsg, peer);
         
         // Also send the spawn message to the new player so they spawn themselves
-        gameServer.Send(peer, spawnMsg);
+        gameServer.SendReliable(peer, spawnMsg);
         
         Debug.Log($"[PlayerSpawnManager - Server] Spawned player {peer.PlayerId} at {spawnPos}");
     }
@@ -132,12 +148,17 @@ public class PlayerSpawnManager : MonoBehaviour
 
         if (peer.PlayerId != -1)
         {
+            // Cleanup ACK tracking
+            lastAckedStateSequence.Remove(peer.PlayerId);
+            currentStateSequence.Remove(peer.PlayerId);
+            unackedStates.Remove(peer.PlayerId);
+            
             // Despawn player locally
             DespawnPlayerLocal(peer.PlayerId);
 
-            // Broadcast despawn to all clients
+            // Broadcast despawn to all clients (reliable)
             DespawnPlayerMessage despawnMsg = new DespawnPlayerMessage(peer.PlayerId);
-            gameServer.Broadcast(despawnMsg);
+            gameServer.BroadcastReliable(despawnMsg);
         }
     }
 
@@ -157,6 +178,10 @@ public class PlayerSpawnManager : MonoBehaviour
         {
             ProcessFireCannon(peer, fireMsg);
         }
+        else if (message is StateAckMessage ackMsg)
+        {
+            ProcessStateAck(peer, ackMsg);
+        }
     }
 
     private void ProcessPlayerInput(Peer peer, PlayerInputMessage input)
@@ -175,9 +200,103 @@ public class PlayerSpawnManager : MonoBehaviour
             return;
         }
 
-        Debug.Log($"[PlayerSpawnManager] Processing input for player {peer.PlayerId} - Forward:{input.forward} Backward:{input.backward}");
+        Debug.Log($"[PlayerSpawnManager - SERVER] Processing input for player {peer.PlayerId} - Forward:{input.forward} Backward:{input.backward}");
+        
         // Server applies input to controller for physics processing
         controller.ApplyInputFromServer(input);
+        
+        // IMMEDIATELY send authoritative state update after processing input
+        SendStateUpdate(peer, controller, input.sequenceNumber, true);
+    }
+
+    private void SendStateUpdate(Peer peer, NetworkPlayerController controller, int inputSequence, bool isImmediate)
+    {
+        if (!currentStateSequence.ContainsKey(peer.PlayerId))
+        {
+            currentStateSequence[peer.PlayerId] = 0;
+        }
+        
+        // Increment state sequence
+        currentStateSequence[peer.PlayerId]++;
+        int stateSeq = currentStateSequence[peer.PlayerId];
+        
+        // Get current state
+        PlayerStateMessage stateMsg = controller.GetCurrentState(inputSequence);
+        stateMsg.stateSequence = stateSeq;
+        
+        // Track unacked state
+        if (unackedStates.ContainsKey(peer.PlayerId))
+        {
+            // Limit queue size to prevent memory leak
+            if (unackedStates[peer.PlayerId].Count >= MAX_UNACKED_STATES)
+            {
+                unackedStates[peer.PlayerId].Dequeue();
+                Debug.LogWarning($"[PlayerSpawnManager - SERVER] Too many unacked states for player {peer.PlayerId}, dropping oldest");
+            }
+            
+            unackedStates[peer.PlayerId].Enqueue(stateMsg);
+        }
+        
+        // Send with reliable delivery for immediate/important updates
+        if (isImmediate)
+        {
+            gameServer.SendReliable(peer, stateMsg);
+            Debug.Log($"[PlayerSpawnManager - SERVER - ACK] Sent RELIABLE state {stateSeq} to player {peer.PlayerId} after input (Unacked: {unackedStates[peer.PlayerId].Count})");
+        }
+        else
+        {
+            // Periodic updates can be unreliable for bandwidth efficiency
+            gameServer.Send(peer, stateMsg);
+            Debug.Log($"[PlayerSpawnManager - SERVER - ACK] Sent UNRELIABLE state {stateSeq} to player {peer.PlayerId} (Unacked: {unackedStates[peer.PlayerId].Count})");
+        }
+    }
+
+    private void ProcessStateAck(Peer peer, StateAckMessage ackMsg)
+    {
+        if (!lastAckedStateSequence.ContainsKey(ackMsg.playerId))
+        {
+            lastAckedStateSequence[ackMsg.playerId] = 0;
+        }
+        
+        // Update last acknowledged sequence
+        int previousAck = lastAckedStateSequence[ackMsg.playerId];
+        int newAck = Mathf.Max(previousAck, ackMsg.stateSequence);
+        lastAckedStateSequence[ackMsg.playerId] = newAck;
+        
+        int statesCleared = 0;
+        
+        // Remove acknowledged states from queue
+        if (unackedStates.ContainsKey(ackMsg.playerId))
+        {
+            int queueSizeBefore = unackedStates[ackMsg.playerId].Count;
+            
+            while (unackedStates[ackMsg.playerId].Count > 0)
+            {
+                PlayerStateMessage oldState = unackedStates[ackMsg.playerId].Peek();
+                if (oldState.stateSequence <= ackMsg.stateSequence)
+                {
+                    unackedStates[ackMsg.playerId].Dequeue();
+                    statesCleared++;
+                }
+                else
+                {
+                    break; // Keep newer unacked states
+                }
+            }
+            
+            int queueSizeAfter = unackedStates[ackMsg.playerId].Count;
+            Debug.Log($"[PlayerSpawnManager - SERVER - ACK] ✓ Player {ackMsg.playerId} ACKed state {ackMsg.stateSequence} | Cleared {statesCleared} states | Queue: {queueSizeBefore} → {queueSizeAfter} | LastAck: {previousAck} → {newAck}");
+        }
+        else
+        {
+            Debug.Log($"[PlayerSpawnManager - SERVER - ACK] ✓ Player {ackMsg.playerId} ACKed state {ackMsg.stateSequence} | No queue found");
+        }
+        
+        // Check for packet loss - if we have many unacked states, might need to resend
+        if (unackedStates.ContainsKey(ackMsg.playerId) && unackedStates[ackMsg.playerId].Count > 5)
+        {
+            Debug.LogWarning($"[PlayerSpawnManager - SERVER - ACK] ⚠ Player {ackMsg.playerId} has {unackedStates[ackMsg.playerId].Count} unacked states - possible packet loss!");
+        }
     }
 
     private void ProcessFireCannon(Peer peer, FireCannonMessage fireMsg)
@@ -240,7 +359,16 @@ public class PlayerSpawnManager : MonoBehaviour
         }
         else if (message is PlayerStateMessage stateMsg)
         {
+            bool isLocal = (stateMsg.playerId == localPlayerId);
+            Debug.Log($"[PlayerSpawnManager - CLIENT - ACK] ← Received state {stateMsg.stateSequence} for player {stateMsg.playerId} (IsLocal:{isLocal})");
+            
             ApplyPlayerState(stateMsg);
+            
+            // Send ACK back to server for this state
+            StateAckMessage ackMsg = new StateAckMessage(stateMsg.playerId, stateMsg.stateSequence);
+            gameClient.Send(ackMsg);
+            
+            Debug.Log($"[PlayerSpawnManager - CLIENT - ACK] → Sent ACK for state {stateMsg.stateSequence} of player {stateMsg.playerId}");
         }
         else if (message is SpawnCannonballMessage cannonballMsg)
         {
@@ -253,7 +381,16 @@ public class PlayerSpawnManager : MonoBehaviour
         if (spawnedPlayers.TryGetValue(state.playerId, out GameObject playerObj))
         {
             NetworkPlayerController controller = playerObj.GetComponent<NetworkPlayerController>();
-            controller?.ApplyNetworkState(state);
+            if (controller != null)
+            {
+                bool isLocal = (state.playerId == localPlayerId);
+                Debug.Log($"[PlayerSpawnManager - CLIENT - ACK] ✓ Applied state {state.stateSequence} for player {state.playerId} (IsLocal:{isLocal}) Pos:{state.position}");
+                controller.ApplyNetworkState(state);
+            }
+        }
+        else
+        {
+            Debug.LogWarning($"[PlayerSpawnManager - CLIENT - ACK] ✗ Cannot apply state {state.stateSequence} - player {state.playerId} not found");
         }
     }
 
@@ -342,11 +479,30 @@ public class PlayerSpawnManager : MonoBehaviour
 
         foreach (var kvp in spawnedPlayers)
         {
+            int playerId = kvp.Key;
             NetworkPlayerController controller = kvp.Value.GetComponent<NetworkPlayerController>();
             if (controller != null)
             {
-                PlayerStateMessage stateMsg = controller.GetCurrentState(0);
-                gameServer.Broadcast(stateMsg);
+                // Find the peer for this player
+                Peer targetPeer = null;
+                foreach (var peer in gameServer.GetConnectedPeers().Values)
+                {
+                    if (peer.PlayerId == playerId)
+                    {
+                        targetPeer = peer;
+                        break;
+                    }
+                }
+                
+                if (targetPeer != null)
+                {
+                    // Send periodic update (unreliable for bandwidth efficiency)
+                    SendStateUpdate(targetPeer, controller, 0, false);
+                }
+                else
+                {
+                    Debug.LogWarning($"[PlayerSpawnManager - SERVER - ACK] No peer found for player {playerId} during periodic broadcast");
+                }
             }
         }
     }
