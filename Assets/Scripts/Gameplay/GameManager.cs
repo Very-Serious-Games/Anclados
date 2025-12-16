@@ -46,6 +46,8 @@ public class GameManager : MonoBehaviour
 
     private void Awake()
     {
+        QualitySettings.vSyncCount = 1;
+        
         if (instance == null)
         {
             instance = this;
