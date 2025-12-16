@@ -79,6 +79,10 @@ public class NetworkServer
         {
             byte[] data = _serializer.Serialize(message);
             _transport.SendToClient(peer.ConnectionId, data);
+            
+            // Track bandwidth for stats UI
+            NetworkStatsUI statsUI = UnityEngine.Object.FindFirstObjectByType<NetworkStatsUI>();
+            statsUI?.OnDataSent(data.Length);
         }
     }
     
@@ -86,6 +90,10 @@ public class NetworkServer
     {
         byte[] data = _serializer.Serialize(packet);
         _transport.SendToClient(connectionId, data);
+        
+        // Track bandwidth for stats UI
+        NetworkStatsUI statsUI = UnityEngine.Object.FindFirstObjectByType<NetworkStatsUI>();
+        statsUI?.OnDataSent(data.Length);
     }
 
     public void Broadcast<T>(T message, Peer excludePeer = null) where T : INetworkMessage
@@ -160,6 +168,10 @@ public class NetworkServer
     private void HandleDataReceived(int connectionId, byte[] data)
     {
         if (_connectedPeers == null || _serializer == null) return;
+        
+        // Track bandwidth for stats UI
+        NetworkStatsUI statsUI = UnityEngine.Object.FindFirstObjectByType<NetworkStatsUI>();
+        statsUI?.OnDataReceived(data.Length);
         
         if (_connectedPeers.TryGetValue(connectionId, out Peer peer))
         {

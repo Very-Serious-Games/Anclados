@@ -59,6 +59,10 @@ public class NetworkClient
         {
             byte[] data = _serializer.Serialize(message);
             _transport.SendToServer(data);
+            
+            // Track bandwidth for stats UI
+            NetworkStatsUI statsUI = UnityEngine.Object.FindFirstObjectByType<NetworkStatsUI>();
+            statsUI?.OnDataSent(data.Length);
         }
     }
     
@@ -66,6 +70,10 @@ public class NetworkClient
     {
         byte[] data = _serializer.Serialize(packet);
         _transport.SendToServer(data);
+        
+        // Track bandwidth for stats UI
+        NetworkStatsUI statsUI = UnityEngine.Object.FindFirstObjectByType<NetworkStatsUI>();
+        statsUI?.OnDataSent(data.Length);
     }
 
     // Private Functions
@@ -92,6 +100,10 @@ public class NetworkClient
 
     private void HandleDataReceived(byte[] data)
     {
+        // Track bandwidth for stats UI
+        NetworkStatsUI statsUI = UnityEngine.Object.FindFirstObjectByType<NetworkStatsUI>();
+        statsUI?.OnDataReceived(data.Length);
+        
         INetworkMessage message = _serializer.Deserialize(data);
         
         // Unpack batched messages
