@@ -422,6 +422,29 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &850442457 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 6025429379792614025, guid: ac101a558ba01bb4dacaec4e20cc978c, type: 3}
+  m_PrefabInstance: {fileID: 8696460005885887365}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &850442469
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 850442457}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5540ed3267eb28e4781ae8114fb6cf5d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  treasurePrefab: {fileID: 2949332187429259422, guid: bd4095b9b1038ab47b31894e6de83f88, type: 3}
+  heightAbovePlayer: 20
+  hasTreasure: 1
+  rotationSpeed: 90
+  bobbingAmplitude: 1.5
+  bobbingSpeed: 2
 --- !u!1001 &8696460005885887365
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -531,7 +554,10 @@ PrefabInstance:
     - {fileID: 5213950065762232712, guid: ac101a558ba01bb4dacaec4e20cc978c, type: 3}
     - {fileID: 6013447231927779370, guid: ac101a558ba01bb4dacaec4e20cc978c, type: 3}
     m_AddedGameObjects: []
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 6025429379792614025, guid: ac101a558ba01bb4dacaec4e20cc978c, type: 3}
+      insertIndex: 3
+      addedObject: {fileID: 850442469}
   m_SourcePrefab: {fileID: 100100000, guid: ac101a558ba01bb4dacaec4e20cc978c, type: 3}
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
