@@ -3,41 +3,6 @@ using UnityEngine.SceneManagement;
 
 public class LobbySceneManager : MonoBehaviour
 {
-    void Start()
-    {
-        // Subscribe to game state messages on client
-        if (GameManager.Instance.gameClient != null)
-        {
-            GameManager.Instance.gameClient.OnMessageReceived += HandleClientMessage;
-            
-            // Send lobby join message to announce presence to server (required for UDP)
-            string username = GameManager.Instance.GetUsername() ?? "Guest";
-            LobbyJoinMessage lobbyJoinMsg = new LobbyJoinMessage(username);
-            GameManager.Instance.gameClient.Send(lobbyJoinMsg);
-            Debug.Log($"[LobbySceneManager] Sent LobbyJoinMessage with username: {username}");
-        }
-    }
-
-    void OnDestroy()
-    {
-        if (GameManager.Instance.gameClient != null)
-        {
-            GameManager.Instance.gameClient.OnMessageReceived -= HandleClientMessage;
-        }
-    }
-
-    private void HandleClientMessage(INetworkMessage message)
-    {
-        if (message is GameStateMessage stateMsg)
-        {
-            if (stateMsg.state == GameState.Playing)
-            {
-                Debug.Log("[LobbySceneManager - Client] Received game start message, switching to Game Scene");
-                SceneManager.LoadScene("Game Scene");
-            }
-        }
-    }
-
     public void GoToMainMenu()
     {
         if (GameManager.Instance.gameClient != null)
@@ -52,12 +17,12 @@ public class LobbySceneManager : MonoBehaviour
 
         if (GameManager.Instance.gameServer != null)
         {
-            GameManager.Instance.gameServer.StopServer();
+            GameManager.Instance.gameServer.Stop();
         }
 
         if (GameManager.Instance.chatServer != null)
         {
-            GameManager.Instance.chatServer.StopServer();
+            GameManager.Instance.chatServer.Stop();
         }
 
         SceneManager.LoadScene("Main Menu Scene");
@@ -65,20 +30,6 @@ public class LobbySceneManager : MonoBehaviour
 
     public void GoToGame()
     {
-        // Only host can start the game
-        if (GameManager.Instance.connectionType != ConnectionType.Host)
-        {
-            Debug.LogWarning("[LobbySceneManager] Only host can start the game!");
-            return;
-        }
-
-        Debug.Log("[LobbySceneManager - Host] Starting game, broadcasting to clients");
-        
-        // Broadcast game start message to all clients
-        GameStateMessage startMsg = new GameStateMessage(GameState.Playing);
-        GameManager.Instance.gameServer.Broadcast(startMsg);
-
-        // Host also switches to game scene
         SceneManager.LoadScene("Game Scene");
     }
 }

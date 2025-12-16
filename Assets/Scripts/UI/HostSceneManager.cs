@@ -14,7 +14,7 @@ public class HostSceneManager : MonoBehaviour
     public void GoToLobby()
     {
         GameManager.Instance.CreateServer(ServerType.UDP);
-        GameManager.Instance.gameServer.StartServer(7777);
+        GameManager.Instance.gameServer.Start(7777);
 
         GameManager.Instance.gameServer.OnPlayerConnected += HandlePlayerConnected;
 
@@ -22,7 +22,7 @@ public class HostSceneManager : MonoBehaviour
         GameManager.Instance.gameClient.Connect("127.0.0.1", 7777);
 
         GameManager.Instance.CreateServer(ServerType.TCP);
-        GameManager.Instance.chatServer.StartServer(7778);
+        GameManager.Instance.chatServer.Start(7778);
 
         GameManager.Instance.StartClient(ServerType.TCP);
         GameManager.Instance.chatClient.Connect("127.0.0.1", 7778);

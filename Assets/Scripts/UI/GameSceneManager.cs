@@ -22,12 +22,12 @@ public class GameSceneManager : MonoBehaviour
 
         if (GameManager.Instance.gameServer != null)
         {
-            GameManager.Instance.gameServer.StopServer();
+            GameManager.Instance.gameServer.Stop();
         }
 
         if (GameManager.Instance.chatServer != null)
         {
-            GameManager.Instance.chatServer.StopServer();
+            GameManager.Instance.chatServer.Stop();
         }
 
         SceneManager.LoadScene("Main Menu Scene");
@@ -47,12 +47,12 @@ public class GameSceneManager : MonoBehaviour
 
         if (GameManager.Instance.gameServer != null)
         {
-            GameManager.Instance.gameServer.StopServer();
+            GameManager.Instance.gameServer.Stop();
         }
 
         if (GameManager.Instance.chatServer != null)
         {
-            GameManager.Instance.chatServer.StopServer();
+            GameManager.Instance.chatServer.Stop();
         }
 
         Application.Quit();
