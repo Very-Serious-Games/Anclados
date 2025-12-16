@@ -27,6 +27,10 @@ public class NetworkServer
     public bool enableBatching = true;
     public int maxMessagesPerPacket = 10;
     public float autoFlushInterval = 0.05f;
+    
+    // ACK System for tracking message delivery
+    private AckSystem _ackSystem;
+    public bool enableAckLogging = true;
 
     public NetworkServer(ITransport transport, INetworkSerializer serializer)
     {
@@ -36,6 +40,9 @@ public class NetworkServer
         // Initialize dictionaries in constructor
         _connectedPeers = new Dictionary<int, Peer>();
         _peerQueues = new Dictionary<int, PacketQueue>();
+        
+        // Initialize ACK system
+        _ackSystem = new AckSystem();
     }
 
     public void StartServer(int port)
@@ -55,6 +62,7 @@ public class NetworkServer
         OnServerStopped?.Invoke();
         _connectedPeers.Clear();
         _peerQueues.Clear();
+        _ackSystem.Clear();
 
         _transport.OnClientConnected -= HandleClientConnected;
         _transport.OnClientDisconnected -= HandleClientDisconnected;
@@ -117,6 +125,8 @@ public class NetworkServer
             autoFlushInterval
         );
         
+        // Note: ACK tracking will be initialized per player ID when assigned
+        
         OnPlayerConnected?.Invoke(newPeer);
 
         Debug.Log($"Client connected: {connectionId}");
@@ -135,6 +145,12 @@ public class NetworkServer
             {
                 queue.Flush();
                 _peerQueues.Remove(connectionId);
+            }
+            
+            // Cleanup ACK tracking if player ID was assigned
+            if (peer.PlayerId != -1)
+            {
+                _ackSystem.CleanupTracking(peer.PlayerId);
             }
             
             OnPlayerDisconnected?.Invoke(peer);
@@ -217,5 +233,48 @@ public class NetworkServer
     public int GetPeerCount()
     {
         return _connectedPeers?.Count ?? 0;
+    }
+    
+    // ---------- ACK System Methods ------------- //
+    
+    /// <summary>
+    /// Initialize ACK tracking for a player (call after assigning player ID)
+    /// </summary>
+    public void InitializeAckTracking(int playerId)
+    {
+        _ackSystem.InitializeTracking(playerId);
+        _ackSystem.enableLogging = enableAckLogging;
+    }
+    
+    /// <summary>
+    /// Get next sequence number for a player and track the message
+    /// </summary>
+    public int GetNextSequence(int playerId, INetworkMessage message)
+    {
+        return _ackSystem.GetNextSequence(playerId, message);
+    }
+    
+    /// <summary>
+    /// Process an acknowledgment from a client
+    /// </summary>
+    public void ProcessAck(int playerId, int sequence)
+    {
+        _ackSystem.ProcessAck(playerId, sequence);
+    }
+    
+    /// <summary>
+    /// Get number of unacknowledged messages for a player
+    /// </summary>
+    public int GetUnackedCount(int playerId)
+    {
+        return _ackSystem.GetUnackedCount(playerId);
+    }
+    
+    /// <summary>
+    /// Get last acknowledged sequence for a player
+    /// </summary>
+    public int GetLastAckedSequence(int playerId)
+    {
+        return _ackSystem.GetLastAckedSequence(playerId);
     }
 }
