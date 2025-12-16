@@ -1881,7 +1881,7 @@ MonoBehaviour:
       - m_Target: {fileID: 771539677}
         m_TargetAssemblyTypeName: JoinSceneManager, Assembly-CSharp
         m_MethodName: OnIpTextValueChanged
-        m_Mode: 5
+        m_Mode: 0
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
           m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine

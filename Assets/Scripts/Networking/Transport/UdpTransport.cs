@@ -31,6 +31,7 @@ public class UdpTransport : ITransport
     private IPEndPoint serverEndPoint;
     bool connectedToServer = false;
 
+    private const int MaxBufferSize = 8192;
 
     // --- Server Functions ---
 
@@ -46,19 +47,20 @@ public class UdpTransport : ITransport
             connectionsById.Clear();
             connectionsByEndPoint.Clear();
 
-            Debug.Log($"[UdpTransport - Socket] Server started at port {port}");
+            MainThreadDispatcher.Enqueue(() => Debug.Log($"[UdpTransport - Socket] Server started at port {port}"));
 
             Task.Run(() => ListenServerAsync(cts.Token));
         }
         catch (Exception e)
         {
-            Debug.LogError($"[UdpTransport - Socket] Server start failed: {e.Message}");
+            string errorMsg = e.Message;
+            MainThreadDispatcher.Enqueue(() => Debug.LogError($"[UdpTransport - Socket] Server start failed: {errorMsg}"));
         }
     }
 
     public void StopServer()
     {
-        Debug.Log("[UdpTransport - Socket] Server stopping...");
+        MainThreadDispatcher.Enqueue(() => Debug.Log("[UdpTransport - Socket] Server stopping..."));
 
         cts.Cancel();
         socket.Close();
@@ -74,7 +76,7 @@ public class UdpTransport : ITransport
         {
             try
             {
-                byte[] buffer = new byte[1024];
+                byte[] buffer = new byte[MaxBufferSize];
                 var result = await socket.ReceiveFromAsync(buffer, SocketFlags.None, remoteEp);
                 IPEndPoint clientEp = (IPEndPoint)result.RemoteEndPoint;
 
@@ -84,16 +86,20 @@ public class UdpTransport : ITransport
                     connectionsById[connectionId] = clientEp;
                     connectionsByEndPoint[clientEp] = connectionId;
 
-                    OnClientConnected?.Invoke(connectionId);
+                    int newConnId = connectionId;
+                    MainThreadDispatcher.Enqueue(() => OnClientConnected?.Invoke(newConnId));
                 }
 
                 Array.Resize(ref buffer, result.ReceivedBytes);
-                OnDataReceived?.Invoke(connectionId, buffer);
+                byte[] data = buffer;
+                int connId = connectionId;
+                MainThreadDispatcher.Enqueue(() => OnDataReceived?.Invoke(connId, data));
             }
             catch (OperationCanceledException) { break; }
             catch (Exception e)
             {
-                Debug.LogError($"[UdpTransport - Socket] Server receive error: {e.Message}");
+                string errorMsg = e.Message;
+                MainThreadDispatcher.Enqueue(() => Debug.LogError($"[UdpTransport - Socket] Server receive error: {errorMsg}"));
             }
         }
     }
@@ -109,19 +115,20 @@ public class UdpTransport : ITransport
             serverEndPoint = new IPEndPoint(IPAddress.Parse(ip), port);
             cts = new CancellationTokenSource();
 
-            Debug.Log($"[UdpTransport - Socket] Client connecting to {ip}:{port}");
+            MainThreadDispatcher.Enqueue(() => Debug.Log($"[UdpTransport - Socket] Client connecting to {ip}:{port}"));
 
             Task.Run(() => ListenClientAsync(cts.Token));
         }
         catch (Exception e)
         {
-            Debug.LogError($"[UdpTransport - Socket] Client connect failed: {e.Message}");
+            string errorMsg = e.Message;
+            MainThreadDispatcher.Enqueue(() => Debug.LogError($"[UdpTransport - Socket] Client connect failed: {errorMsg}"));
         }
     }
 
     public void Disconnect()
     {
-        Debug.Log("[UdpTransport - Socket] Client disconnecting...");
+        MainThreadDispatcher.Enqueue(() => Debug.Log("[UdpTransport - Socket] Client disconnecting..."));
         cts?.Cancel();
         socket?.Close();
         connectedToServer = false;
@@ -137,7 +144,7 @@ public class UdpTransport : ITransport
         {
             try
             {
-                byte[] buffer = new byte[1024];
+                byte[] buffer = new byte[MaxBufferSize];
                 var result = await socket.ReceiveFromAsync(buffer, SocketFlags.None, remoteEp);
 
                 if (result.RemoteEndPoint.Equals(serverEndPoint))
@@ -145,17 +152,19 @@ public class UdpTransport : ITransport
                     if (!connectedToServer)
                     {
                         connectedToServer = true;
-                        OnConnectedToServer?.Invoke();
+                        MainThreadDispatcher.Enqueue(() => OnConnectedToServer?.Invoke());
                     }
 
                     Array.Resize(ref buffer, result.ReceivedBytes);
-                    OnDataReceivedFromServer?.Invoke(buffer);
+                    byte[] data = buffer;
+                    MainThreadDispatcher.Enqueue(() => OnDataReceivedFromServer?.Invoke(data));
                 }
             }
             catch (OperationCanceledException) { break; }
             catch (Exception e)
             {
-                Debug.LogError($"[UdpTransport - Socket] Client receive error: {e.Message}");
+                string errorMsg = e.Message;
+                MainThreadDispatcher.Enqueue(() => Debug.LogError($"[UdpTransport - Socket] Client receive error: {errorMsg}"));
             }
         }
     }
@@ -174,6 +183,23 @@ public class UdpTransport : ITransport
         if (connectionsById.TryGetValue(connectionId, out IPEndPoint endpoint))
         {
             socket.SendToAsync(data, SocketFlags.None, endpoint);
+        }
+    }
+    
+    /// <summary>
+    /// Force disconnect a client (for UDP, just remove from connection tracking)
+    /// </summary>
+    public void ForceDisconnect(int connectionId)
+    {
+        if (connectionsById.TryGetValue(connectionId, out IPEndPoint endpoint))
+        {
+            connectionsByEndPoint.Remove(endpoint);
+            connectionsById.Remove(connectionId);
+            
+            MainThreadDispatcher.Enqueue(() => {
+                Debug.Log($"[UdpTransport - Socket] Forcefully disconnected client {connectionId}");
+                OnClientDisconnected?.Invoke(connectionId);
+            });
         }
     }
     
