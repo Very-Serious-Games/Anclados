@@ -73,7 +73,7 @@ public class GameManager : MonoBehaviour
     private NetworkServer CreateServerInstance(ServerType serverType, string serverName)
     {
         ITransport transport = serverType == ServerType.TCP ? (ITransport)new TcpTransport() : new UdpTransport();
-        INetworkSerializer serializer = new JSONNetSerializer();
+        INetworkSerializer serializer = new BinaryNetSerializer();
         
         NetworkServer server = new NetworkServer(transport, serializer);
         Debug.Log($"[GameManager] Created {serverType} server: {serverName}");
@@ -102,7 +102,7 @@ public class GameManager : MonoBehaviour
     private NetworkClient CreateClientInstance(ServerType serverType, string clientName)
     {
         ITransport transport = serverType == ServerType.TCP ? (ITransport)new TcpTransport() : new UdpTransport();
-        INetworkSerializer serializer = new JSONNetSerializer();
+        INetworkSerializer serializer = new BinaryNetSerializer();
         
         NetworkClient client = new NetworkClient(transport, serializer);
         Debug.Log($"[GameManager] Created {serverType} client: {clientName}");
