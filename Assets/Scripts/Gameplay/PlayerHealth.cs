@@ -2,10 +2,8 @@ using UnityEngine;
 
 public class PlayerHealth : MonoBehaviour
 {
-    public float maxHealth = 100f;
+    public float maxHealth = 3f;
     public float currentHealth;
-
-    public float damageFromCannonball = 25f;
 
     private bool isSinking = false;
     private Rigidbody rb;
@@ -21,21 +19,11 @@ public class PlayerHealth : MonoBehaviour
         movementScript = GetComponent<PlayerMovement>();
     }
 
-    void OnCollisionEnter(Collision collision)
-    {
-        if (collision.collider.CompareTag("CannonBall"))
-        {
-            Debug.Log("IMPACTO: Bala de cañón detectada");
-            TakeDamage(damageFromCannonball);
-        }
-    }
-
     public void TakeDamage(float amount)
     {
         if (isSinking) return;
 
         currentHealth -= amount;
-        Debug.Log("Barco recibió daño. Vida actual: " + currentHealth);
 
         if (currentHealth <= 0)
         {
@@ -45,7 +33,6 @@ public class PlayerHealth : MonoBehaviour
 
     void StartSinking()
     {
-        Debug.Log("El barco se está hundiendo...");
         isSinking = true;
 
         if (movementScript != null)
@@ -55,7 +42,6 @@ public class PlayerHealth : MonoBehaviour
         {
             rb.linearVelocity = Vector3.zero;
             rb.angularVelocity = Vector3.zero;
-
             rb.freezeRotation = true;
         }
     }

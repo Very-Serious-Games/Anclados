@@ -265,6 +265,25 @@ public class TcpTransport : ITransport
             MainThreadDispatcher.Enqueue(() => Debug.LogError($"[TcpTransport - Socket] Send to client {connectionId} error: {e.Message}"));
         }
     }
+    
+    /// <summary>
+    /// Force disconnect a client
+    /// </summary>
+    public void ForceDisconnect(int connectionId)
+    {
+        if (connectionsById.TryGetValue(connectionId, out TcpClient client))
+        {
+            connectionsByClient.Remove(client);
+            connectionsById.Remove(connectionId);
+            
+            client.Close();
+            
+            MainThreadDispatcher.Enqueue(() => {
+                Debug.Log($"[TcpTransport - Socket] Forcefully disconnected client {connectionId}");
+                OnClientDisconnected?.Invoke(connectionId);
+            });
+        }
+    }
 
     public void Dispose()
     {
