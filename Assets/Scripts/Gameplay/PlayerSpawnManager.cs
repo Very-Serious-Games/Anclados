@@ -108,9 +108,9 @@ public class PlayerSpawnManager : MonoBehaviour
         Vector3 spawnPos = GetNextSpawnPosition();
         Quaternion spawnRot = Quaternion.identity;
 
-        // IMPORTANT: Send player ID assignment FIRST with reliable delivery
+        // IMPORTANT: Send player ID assignment FIRST
         AssignPlayerIdMessage assignMsg = new AssignPlayerIdMessage(peer.PlayerId);
-        gameServer.SendReliable(peer, assignMsg);
+        gameServer.Send(peer, assignMsg);
 
         // Spawn player on server
         GameObject playerObj = SpawnPlayerLocal(peer.PlayerId, peer.Username, spawnPos, spawnRot, false);
@@ -129,15 +129,15 @@ public class PlayerSpawnManager : MonoBehaviour
                 existingPeer.PlayerObject.transform.position,
                 existingPeer.PlayerObject.transform.rotation
             );
-            gameServer.SendReliable(peer, existingMsg);
+            gameServer.Send(peer, existingMsg);
         }
 
-        // Broadcast new player to all other clients (reliable)
+        // Broadcast new player to all other clients
         SpawnPlayerMessage spawnMsg = new SpawnPlayerMessage(peer.PlayerId, peer.Username, spawnPos, spawnRot);
-        gameServer.BroadcastReliable(spawnMsg, peer);
+        gameServer.Broadcast(spawnMsg, peer);
         
         // Also send the spawn message to the new player so they spawn themselves
-        gameServer.SendReliable(peer, spawnMsg);
+        gameServer.Send(peer, spawnMsg);
         
         Debug.Log($"[PlayerSpawnManager - Server] Spawned player {peer.PlayerId} at {spawnPos}");
     }
@@ -156,9 +156,9 @@ public class PlayerSpawnManager : MonoBehaviour
             // Despawn player locally
             DespawnPlayerLocal(peer.PlayerId);
 
-            // Broadcast despawn to all clients (reliable)
+            // Broadcast despawn to all clients
             DespawnPlayerMessage despawnMsg = new DespawnPlayerMessage(peer.PlayerId);
-            gameServer.BroadcastReliable(despawnMsg);
+            gameServer.Broadcast(despawnMsg);
         }
     }
 
@@ -237,17 +237,16 @@ public class PlayerSpawnManager : MonoBehaviour
             unackedStates[peer.PlayerId].Enqueue(stateMsg);
         }
         
-        // Send with reliable delivery for immediate/important updates
+        // Send state update (ENet provides reliable delivery by default)
+        gameServer.Send(peer, stateMsg);
+        
         if (isImmediate)
         {
-            gameServer.SendReliable(peer, stateMsg);
-            Debug.Log($"[PlayerSpawnManager - SERVER - ACK] Sent RELIABLE state {stateSeq} to player {peer.PlayerId} after input (Unacked: {unackedStates[peer.PlayerId].Count})");
+            Debug.Log($"[PlayerSpawnManager - SERVER - ACK] Sent IMMEDIATE state {stateSeq} to player {peer.PlayerId} after input (Unacked: {unackedStates[peer.PlayerId].Count})");
         }
         else
         {
-            // Periodic updates can be unreliable for bandwidth efficiency
-            gameServer.Send(peer, stateMsg);
-            Debug.Log($"[PlayerSpawnManager - SERVER - ACK] Sent UNRELIABLE state {stateSeq} to player {peer.PlayerId} (Unacked: {unackedStates[peer.PlayerId].Count})");
+            Debug.Log($"[PlayerSpawnManager - SERVER - ACK] Sent PERIODIC state {stateSeq} to player {peer.PlayerId} (Unacked: {unackedStates[peer.PlayerId].Count})");
         }
     }
 
