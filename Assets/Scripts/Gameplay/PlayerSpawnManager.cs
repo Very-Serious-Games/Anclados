@@ -84,7 +84,14 @@ public class PlayerSpawnManager : MonoBehaviour
     
     private void SpawnPlayerForPeer(Peer peer, string username)
     {
-        Debug.Log($"[PlayerSpawnManager - Server] Spawning player for connection {peer.ConnectionId}");
+        Debug.Log($"[PlayerSpawnManager - Server] SpawnPlayerForPeer called - ConnectionId:{peer.ConnectionId}, PlayerId:{peer.PlayerId}, Username:{username}");
+        
+        // Check if already spawned
+        if (peer.IsPlayerSpawned)
+        {
+            Debug.LogWarning($"[PlayerSpawnManager - Server] Player {peer.PlayerId} already spawned! Skipping.");
+            return;
+        }
         
         peer.Username = username;
 
@@ -95,10 +102,12 @@ public class PlayerSpawnManager : MonoBehaviour
         // IMPORTANT: Send player ID assignment FIRST
         AssignPlayerIdMessage assignMsg = new AssignPlayerIdMessage(peer.PlayerId);
         gameServer.Send(peer, assignMsg);
+        Debug.Log($"[PlayerSpawnManager - Server] Sent AssignPlayerIdMessage({peer.PlayerId}) to connection {peer.ConnectionId}");
 
         // Spawn player on server
         GameObject playerObj = SpawnPlayerLocal(peer.PlayerId, peer.Username, spawnPos, spawnRot, false);
         peer.PlayerObject = playerObj;
+        Debug.Log($"[PlayerSpawnManager - Server] Spawned server-side player object for PlayerId:{peer.PlayerId}");
 
         // Tell this client about existing players
         foreach (var existingPeer in gameServer.GetConnectedPeers().Values)
@@ -116,14 +125,14 @@ public class PlayerSpawnManager : MonoBehaviour
             gameServer.Send(peer, existingMsg);
         }
 
+        // Send spawn message to the new player (for themselves)
+        SpawnPlayerMessage ownSpawnMsg = new SpawnPlayerMessage(peer.PlayerId, peer.Username, spawnPos, spawnRot);
+        gameServer.Send(peer, ownSpawnMsg);
+        
         // Broadcast new player to all other clients
-        SpawnPlayerMessage spawnMsg = new SpawnPlayerMessage(peer.PlayerId, peer.Username, spawnPos, spawnRot);
-        gameServer.Broadcast(spawnMsg, peer);
+        gameServer.Broadcast(ownSpawnMsg, peer);
         
-        // Also send the spawn message to the new player so they spawn themselves
-        gameServer.Send(peer, spawnMsg);
-        
-        Debug.Log($"[PlayerSpawnManager - Server] Spawned player {peer.PlayerId} at {spawnPos}");
+        Debug.Log($"[PlayerSpawnManager - Server] ✓ Completed spawning player {peer.PlayerId} ({peer.Username}) at {spawnPos}");
     }
 
     private void HandleServerPlayerDisconnected(Peer peer)
@@ -175,13 +184,9 @@ public class PlayerSpawnManager : MonoBehaviour
             return;
         }
 
-        Debug.Log($"[PlayerSpawnManager - SERVER] Applying input for player {peer.PlayerId} - F:{input.forward} B:{input.backward} TL:{input.turnLeft} TR:{input.turnRight}");
+        Debug.Log($"[PlayerSpawnManager] Processing input for player {peer.PlayerId} - Forward:{input.forward} Backward:{input.backward}");
         // Server applies input to controller for physics processing
         controller.ApplyInputFromServer(input);
-        
-        // IMMEDIATELY broadcast the new state after processing input
-        PlayerStateMessage state = controller.GetCurrentState(input.sequenceNumber);
-        gameServer.Broadcast(state, peer);
     }
 
     private void ProcessFireCannon(Peer peer, FireCannonMessage fireMsg)
@@ -219,7 +224,6 @@ public class PlayerSpawnManager : MonoBehaviour
                 NetworkPlayer netPlayer = playerObj.GetComponent<NetworkPlayer>();
                 NetworkPlayerController controller = playerObj.GetComponent<NetworkPlayerController>();
                 NetworkHealth health = playerObj.GetComponent<NetworkHealth>();
-                // TODO add other components that need local player flag
                 
                 if (netPlayer != null)
                     netPlayer.isLocalPlayer = true;
@@ -230,13 +234,24 @@ public class PlayerSpawnManager : MonoBehaviour
                 if (health != null)
                     health.isLocalPlayer = true;
                 
-                Debug.Log($"[PlayerSpawnManager - Client] Updated player {localPlayerId} to local player");
+                // Assign camera to local player
+                AssignCameraToLocalPlayer(playerObj);
+                
+                Debug.Log($"[PlayerSpawnManager - Client] Updated player {localPlayerId} to local player and assigned camera");
             }
         }
         else if (message is SpawnPlayerMessage spawnMsg)
         {
-            bool isLocal = (spawnMsg.playerId == localPlayerId);
-            SpawnPlayerLocal(spawnMsg.playerId, spawnMsg.username, spawnMsg.spawnPosition, spawnMsg.spawnRotation, isLocal);
+            bool isLocal = (localPlayerId != -1 && spawnMsg.playerId == localPlayerId);
+            Debug.Log($"[PlayerSpawnManager - Client] Received SpawnPlayerMessage - PlayerId:{spawnMsg.playerId}, Username:{spawnMsg.username}, IsLocal:{isLocal}, LocalPlayerId:{localPlayerId}");
+            
+            GameObject spawnedPlayer = SpawnPlayerLocal(spawnMsg.playerId, spawnMsg.username, spawnMsg.spawnPosition, spawnMsg.spawnRotation, isLocal);
+            
+            // If this was spawned before we got our ID assignment, and now we know it's us, update it
+            if (!isLocal && localPlayerId == -1)
+            {
+                Debug.Log($"[PlayerSpawnManager - Client] Spawned player {spawnMsg.playerId} before receiving local player ID. Will update when ID is assigned.");
+            }
         }
         else if (message is DespawnPlayerMessage despawnMsg)
         {
@@ -257,12 +272,7 @@ public class PlayerSpawnManager : MonoBehaviour
         if (spawnedPlayers.TryGetValue(state.playerId, out GameObject playerObj))
         {
             NetworkPlayerController controller = playerObj.GetComponent<NetworkPlayerController>();
-            if (controller != null)
-            {
-                bool isLocal = controller.isLocalPlayer;
-                Debug.Log($"[PlayerSpawnManager - CLIENT] Applying state for player {state.playerId} - IsLocal:{isLocal} Pos:{state.position}");
-                controller.ApplyNetworkState(state);
-            }
+            controller?.ApplyNetworkState(state);
         }
     }
 
@@ -272,10 +282,12 @@ public class PlayerSpawnManager : MonoBehaviour
     {
         if (spawnedPlayers.ContainsKey(playerId))
         {
-            Debug.LogWarning($"[PlayerSpawnManager] Player {playerId} already spawned!");
+            Debug.LogWarning($"[PlayerSpawnManager] Player {playerId} already spawned locally! Skipping duplicate spawn.");
             return spawnedPlayers[playerId];
         }
 
+        Debug.Log($"[PlayerSpawnManager] SpawnPlayerLocal - PlayerId:{playerId}, Username:{username}, Position:{position}, IsLocal:{isLocal}");
+        
         GameObject playerObj = Instantiate(playerPrefab, position, rotation);
         spawnedPlayers[playerId] = playerObj;
 
@@ -293,9 +305,88 @@ public class PlayerSpawnManager : MonoBehaviour
             controller.isLocalPlayer = isLocal;
             controller.playerId = playerId;
         }
-
-        Debug.Log($"[PlayerSpawnManager] Spawned player {playerId} ({username}) - IsLocal: {isLocal}");
+        
+        // Initialize health
+        NetworkHealth health = playerObj.GetComponent<NetworkHealth>();
+        if (health != null)
+        {
+            health.isLocalPlayer = isLocal;
+            health.playerId = playerId;
+        }
+        
+        // Handle camera and audio listener
+        if (isLocal)
+        {
+            // Enable camera for local player
+            AssignCameraToLocalPlayer(playerObj);
+        }
+        else
+        {
+            // Disable camera and audio listener for remote players
+            Camera remoteCamera = playerObj.GetComponentInChildren<Camera>(true);
+            AudioListener remoteAudioListener = playerObj.GetComponentInChildren<AudioListener>(true);
+            
+            if (remoteCamera != null)
+            {
+                remoteCamera.enabled = false;
+                remoteCamera.gameObject.SetActive(false);
+                Debug.Log($"[PlayerSpawnManager] Disabled camera for remote player: {playerObj.name}");
+            }
+            
+            if (remoteAudioListener != null)
+            {
+                remoteAudioListener.enabled = false;
+                Debug.Log($"[PlayerSpawnManager] Disabled AudioListener for remote player: {playerObj.name}");
+            }
+        }
+        
         return playerObj;
+    }
+
+    private void AssignCameraToLocalPlayer(GameObject playerObj)
+    {
+        if (playerObj == null)
+        {
+            Debug.LogError("[PlayerSpawnManager] Cannot assign camera - playerObj is null!");
+            return;
+        }
+        
+        Debug.Log($"[PlayerSpawnManager] AssignCameraToLocalPlayer called for: {playerObj.name}");
+        
+        // Find camera in the player's children (since it's a child of the prefab)
+        Camera playerCamera = playerObj.GetComponentInChildren<Camera>(true);
+        AudioListener audioListener = playerObj.GetComponentInChildren<AudioListener>(true);
+        
+        Debug.Log($"[PlayerSpawnManager] Found Camera: {(playerCamera != null ? playerCamera.gameObject.name : "NULL")}, AudioListener: {(audioListener != null ? audioListener.gameObject.name : "NULL")}");
+        
+        if (playerCamera != null)
+        {
+            playerCamera.enabled = true;
+            playerCamera.gameObject.SetActive(true);
+            Debug.Log($"[PlayerSpawnManager] ✓ Enabled camera for local player: {playerObj.name} (Camera: {playerCamera.gameObject.name})");
+        }
+        else
+        {
+            Debug.LogWarning($"[PlayerSpawnManager] ✗ Camera not found in player prefab children: {playerObj.name}");
+        }
+        
+        if (audioListener != null)
+        {
+            audioListener.enabled = true;
+            Debug.Log($"[PlayerSpawnManager] ✓ Enabled AudioListener for local player: {playerObj.name}");
+        }
+        else
+        {
+            Debug.LogWarning($"[PlayerSpawnManager] ✗ AudioListener not found in player prefab children: {playerObj.name}");
+        }
+        
+        // Also check if there's a CameraManager in the scene that needs updating
+        CameraManager cameraManager = FindFirstObjectByType<CameraManager>();
+        if (cameraManager != null)
+        {
+            cameraManager.target = playerObj.transform;
+            Debug.Log($"[PlayerSpawnManager] Assigned CameraManager target to local player: {playerObj.name}");
+        }
     }
 
     private void DespawnPlayerLocal(int playerId)
@@ -351,13 +442,11 @@ public class PlayerSpawnManager : MonoBehaviour
 
         foreach (var kvp in spawnedPlayers)
         {
-            int playerId = kvp.Key;
             NetworkPlayerController controller = kvp.Value.GetComponent<NetworkPlayerController>();
             if (controller != null)
             {
                 PlayerStateMessage stateMsg = controller.GetCurrentState(0);
                 gameServer.Broadcast(stateMsg);
-                Debug.Log($"[PlayerSpawnManager - SERVER] Broadcasting state for player {playerId} - Pos:{stateMsg.position}");
             }
         }
     }

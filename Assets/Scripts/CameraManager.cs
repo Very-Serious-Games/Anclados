@@ -32,12 +32,6 @@ public class CameraManager : MonoBehaviour
         {
             // Mantener una rotación fija isométrica (no depende de la rotación del barco)
             transform.rotation = Quaternion.Euler(isoAngleX, isoAngleY, 0f);
-            // Asegurar que la cámara esté en modo ortográfico
-            if (cam != null && !cam.orthographic)
-            {
-                cam.orthographic = true;
-                cam.orthographicSize = orthoSize;
-            }
         }
         else
         {

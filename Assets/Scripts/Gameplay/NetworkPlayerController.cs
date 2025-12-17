@@ -69,10 +69,19 @@ public class NetworkPlayerController : MonoBehaviour
         public bool anchorToggle, fireLeft, fireRight;
     }
     private PlayerInput currentInput;
+    
+    void Awake()
+    {
+        // Initialize Rigidbody early to avoid null reference
+        if (rb == null)
+            rb = GetComponent<Rigidbody>();
+    }
 
     void Start()
     {
-        rb = GetComponent<Rigidbody>();
+        if (rb == null)
+            rb = GetComponent<Rigidbody>();
+            
         rb.freezeRotation = false;
 
         if (lockHeight)
@@ -419,11 +428,17 @@ public class NetworkPlayerController : MonoBehaviour
     /// </summary>
     public PlayerStateMessage GetCurrentState(int lastProcessedInputSeq)
     {
+        // Ensure Rigidbody is initialized
+        if (rb == null)
+            rb = GetComponent<Rigidbody>();
+            
+        Vector3 velocity = rb != null ? rb.linearVelocity : Vector3.zero;
+        
         return new PlayerStateMessage(
             playerId,
             transform.position,
             transform.rotation,
-            rb.linearVelocity,
+            velocity,
             anchorActive,
             Time.time,
             lastProcessedInputSeq

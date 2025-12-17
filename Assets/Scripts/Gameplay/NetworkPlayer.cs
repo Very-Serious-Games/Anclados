@@ -39,11 +39,13 @@ public class NetworkPlayer : MonoBehaviour
         if (controller != null)
         {
             controller.isLocalPlayer = isLocal;
+            controller.playerId = playerId;
         }
         
         if (health != null)
         {
             health.isLocalPlayer = isLocal;
+            health.playerId = playerId;
         }
     }
 
