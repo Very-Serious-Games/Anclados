@@ -44,12 +44,6 @@ public class PlayerSpawnManager : MonoBehaviour
             gameServer.OnPlayerConnected += HandleServerPlayerConnected;
             gameServer.OnPlayerDisconnected += HandleServerPlayerDisconnected;
             gameServer.OnMessageReceived += HandleServerMessage;
-            
-            // Handle already-connected peers (connected during lobby)
-            foreach (var peer in gameServer.GetConnectedPeers().Values)
-            {
-                HandleServerPlayerConnected(peer);
-            }
         }
 
         // Subscribe to client events
@@ -57,8 +51,53 @@ public class PlayerSpawnManager : MonoBehaviour
         {
             gameClient.OnMessageReceived += HandleClientMessage;
             
-            // Send join message now that we're in the game scene
-            gameClient.SendJoinMessage();
+            // If we're the host, spawn our own local player immediately FIRST
+            if (GameManager.Instance.connectionType == ConnectionType.Host)
+            {
+                // Host assigns itself player ID 1 (first player)
+                localPlayerId = nextPlayerId++;
+                
+                // Find the host's peer (should be the first one connected to itself)
+                Peer hostPeer = null;
+                foreach (var peer in gameServer.GetConnectedPeers().Values)
+                {
+                    if (peer.PlayerId == -1) // Not yet assigned
+                    {
+                        peer.PlayerId = localPlayerId;
+                        hostPeer = peer;
+                        gameServer.InitializeAckTracking(peer.PlayerId);
+                        Debug.Log($"[PlayerSpawnManager - Host] Assigned PlayerId {localPlayerId} to host peer (ConnectionId: {peer.ConnectionId})");
+                        break;
+                    }
+                }
+                
+                // Spawn local player for host
+                Vector3 spawnPos = GetNextSpawnPosition();
+                Quaternion spawnRot = Quaternion.identity;
+                GameObject playerObj = SpawnPlayerLocal(localPlayerId, GameManager.Instance.GetUsername(), spawnPos, spawnRot, true);
+                
+                if (hostPeer != null)
+                {
+                    hostPeer.PlayerObject = playerObj;
+                    hostPeer.Username = GameManager.Instance.GetUsername();
+                }
+                
+                Debug.Log($"[PlayerSpawnManager - Host] Spawned local player {localPlayerId} at {spawnPos}");
+                
+                // Now handle already-connected peers (connected during lobby) - they get IDs 2, 3, etc.
+                foreach (var peer in gameServer.GetConnectedPeers().Values)
+                {
+                    if (peer.PlayerId == -1) // Not yet assigned (skip host peer which was just assigned)
+                    {
+                        HandleServerPlayerConnected(peer);
+                    }
+                }
+            }
+            else
+            {
+                // Regular clients send join message
+                gameClient.SendJoinMessage();
+            }
         }
     }
 
@@ -117,7 +156,8 @@ public class PlayerSpawnManager : MonoBehaviour
         AssignPlayerIdMessage assignMsg = new AssignPlayerIdMessage(peer.PlayerId);
         gameServer.Send(peer, assignMsg);
 
-        // Spawn player on server
+        // Spawn player on server (always as remote from server's perspective)
+        // Note: Host already spawned itself as local, so this creates remote representation
         GameObject playerObj = SpawnPlayerLocal(peer.PlayerId, peer.Username, spawnPos, spawnRot, false);
         peer.PlayerObject = playerObj;
 
@@ -137,12 +177,13 @@ public class PlayerSpawnManager : MonoBehaviour
             gameServer.Send(peer, existingMsg);
         }
 
-        // Broadcast new player to all other clients
-        SpawnPlayerMessage spawnMsg = new SpawnPlayerMessage(peer.PlayerId, peer.Username, spawnPos, spawnRot);
-        gameServer.Broadcast(spawnMsg, peer);
-        
-        // Also send the spawn message to the new player so they spawn themselves
-        gameServer.Send(peer, spawnMsg);
+        // Tell the new player to spawn themselves (after they know existing players)
+        SpawnPlayerMessage selfSpawnMsg = new SpawnPlayerMessage(peer.PlayerId, peer.Username, spawnPos, spawnRot);
+        gameServer.Send(peer, selfSpawnMsg);
+
+        // Broadcast new player to all other clients (excluding the new player themselves)
+        SpawnPlayerMessage broadcastMsg = new SpawnPlayerMessage(peer.PlayerId, peer.Username, spawnPos, spawnRot);
+        gameServer.Broadcast(broadcastMsg, peer);
         
         Debug.Log($"[PlayerSpawnManager - Server] Spawned player {peer.PlayerId} at {spawnPos}");
     }
@@ -270,13 +311,12 @@ public class PlayerSpawnManager : MonoBehaviour
             localPlayerId = assignMsg.assignedPlayerId;
             Debug.Log($"[PlayerSpawnManager - Client] Assigned player ID: {localPlayerId}");
             
-            // If player was already spawned, update the local flag
+            // If player was already spawned (from SpawnPlayerMessage), update the local flag
             if (spawnedPlayers.TryGetValue(localPlayerId, out GameObject playerObj))
             {
                 NetworkPlayer netPlayer = playerObj.GetComponent<NetworkPlayer>();
                 NetworkPlayerController controller = playerObj.GetComponent<NetworkPlayerController>();
                 NetworkHealth health = playerObj.GetComponent<NetworkHealth>();
-                // TODO add other components that need local player flag
                 
                 if (netPlayer != null)
                     netPlayer.isLocalPlayer = true;
@@ -287,7 +327,30 @@ public class PlayerSpawnManager : MonoBehaviour
                 if (health != null)
                     health.isLocalPlayer = true;
                 
+                // Enable camera for this player
+                Camera playerCamera = playerObj.GetComponentInChildren<Camera>();
+                if (playerCamera != null)
+                {
+                    playerCamera.enabled = true;
+                    playerCamera.gameObject.SetActive(true);
+                    
+                    AudioListener audioListener = playerCamera.GetComponent<AudioListener>();
+                    if (audioListener != null)
+                    {
+                        audioListener.enabled = true;
+                    }
+                    
+                    Debug.Log($"[PlayerSpawnManager - Client] Enabled camera for assigned local player {localPlayerId}");
+                }
+                
                 Debug.Log($"[PlayerSpawnManager - Client] Updated player {localPlayerId} to local player");
+            }
+            else
+            {
+                // Player not spawned yet, request spawn position from server
+                // For now, we'll wait for the SpawnPlayerMessage
+                // In a production system, the server should send position with AssignPlayerIdMessage
+                Debug.Log($"[PlayerSpawnManager - Client] Waiting for spawn position for local player {localPlayerId}");
             }
         }
         else if (message is SpawnPlayerMessage spawnMsg)
@@ -362,6 +425,34 @@ public class PlayerSpawnManager : MonoBehaviour
         {
             controller.isLocalPlayer = isLocal;
             controller.playerId = playerId;
+        }
+
+        // Enable camera only for local player
+        Camera playerCamera = playerObj.GetComponentInChildren<Camera>();
+        if (playerCamera != null)
+        {
+            playerCamera.enabled = isLocal;
+            playerCamera.gameObject.SetActive(isLocal);
+            
+            if (isLocal)
+            {
+                // Ensure AudioListener is also enabled for local player
+                AudioListener audioListener = playerCamera.GetComponent<AudioListener>();
+                if (audioListener != null)
+                {
+                    audioListener.enabled = true;
+                }
+                
+                Debug.Log($"[PlayerSpawnManager] Enabled camera for local player {playerId}");
+            }
+            else
+            {
+                Debug.Log($"[PlayerSpawnManager] Camera disabled for remote player {playerId}");
+            }
+        }
+        else
+        {
+            Debug.LogWarning($"[PlayerSpawnManager] No camera found in player {playerId} hierarchy!");
         }
 
         Debug.Log($"[PlayerSpawnManager] Spawned player {playerId} ({username}) - IsLocal: {isLocal}");
