@@ -21,6 +21,8 @@ public class GameManager : MonoBehaviour
     public NetworkServer chatServer = null;
     public NetworkClient chatClient = null;
     public ConnectionType connectionType;
+    
+    private NetworkHeartbeatIntegration heartbeatIntegration;
 
     private string username;
     private NetworkUpdateManager networkUpdateManager;

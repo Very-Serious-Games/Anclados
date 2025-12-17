@@ -10,6 +10,8 @@ public class NetworkHeartbeatIntegration : MonoBehaviour
     private HeartbeatManager chatClientHeartbeat;
     private ServerHeartbeatMonitor gameServerMonitor;
     private ServerHeartbeatMonitor chatServerMonitor;
+    
+    public HeartbeatManager GameClientHeartbeat => gameClientHeartbeat;
 
     void Start()
     {

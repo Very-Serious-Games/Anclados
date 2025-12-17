@@ -16,6 +16,7 @@ public class HeartbeatManager : MonoBehaviour
     private NetworkClient networkClient;
     private float lastPingTime;
     private float lastPongTime;
+    private float lastRtt = 0f;  // Store last measured RTT
     private bool isRunning = false;
 
     public void Initialize(NetworkClient client)
@@ -54,14 +55,13 @@ public class HeartbeatManager : MonoBehaviour
         PingMessage ping = new PingMessage(Time.time);
         networkClient.Send(ping);
     }
-
     private void HandleMessageReceived(INetworkMessage message)
     {
         if (message is PongMessage pong)
         {
             lastPongTime = Time.time;
-            float rtt = Time.time - pong.timestamp;
-            Debug.Log($"[HeartbeatManager] Pong received - RTT: {rtt * 1000:F1}ms");
+            lastRtt = Time.time - pong.timestamp;
+            Debug.Log($"[HeartbeatManager] Pong received - RTT: {lastRtt * 1000:F1}ms");
         }
     }
 
@@ -85,6 +85,14 @@ public class HeartbeatManager : MonoBehaviour
     public float GetTimeSinceLastPong()
     {
         return Time.time - lastPongTime;
+    }
+    
+    /// <summary>
+    /// Returns the last measured RTT in seconds
+    /// </summary>
+    public float GetRtt()
+    {
+        return lastRtt;
     }
 
     /// <summary>
