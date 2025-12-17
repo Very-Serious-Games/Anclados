@@ -3,6 +3,6 @@
 // Useful for especific implementations like JsonNetSerializer, BinarySerializer, etc...
 public interface INetworkSerializer
 {
-    byte[] Serialize<T>(T message) where T : INetworkMessage;
-    T Deserialize<T>(byte[] data) where T : INetworkMessage;
+    byte[] Serialize(INetworkMessage message);
+    INetworkMessage Deserialize(byte[] data);
 }
