@@ -23,6 +23,7 @@ public class GameManager : MonoBehaviour
     public ConnectionType connectionType;
 
     private string username;
+    private NetworkUpdateManager networkUpdateManager;
 
     // -- Singleton Logic -- //
 
@@ -52,18 +53,20 @@ public class GameManager : MonoBehaviour
         {
             instance = this;
             DontDestroyOnLoad(gameObject);
+            
+            // Create NetworkUpdateManager
+            GameObject networkUpdateObj = new GameObject("NetworkUpdateManager");
+            networkUpdateObj.transform.SetParent(transform);
+            networkUpdateManager = networkUpdateObj.AddComponent<NetworkUpdateManager>();
+            networkUpdateManager.OnNetworkTick += OnNetworkTick;
         }
         else if (instance != this)
         {
             Destroy(gameObject);
         }
     }
-
-    void Start()
-    {
-    }
-
-    void Update()
+    
+    private void OnNetworkTick()
     {
         // Update network instances for packet batching
         gameServer?.Update();
@@ -212,6 +215,12 @@ public class GameManager : MonoBehaviour
         {
             chatClient.Disconnect();
             chatClient = null;
+        }
+        
+        // Unsubscribe from network tick
+        if (networkUpdateManager != null)
+        {
+            networkUpdateManager.OnNetworkTick -= OnNetworkTick;
         }
     }
 }

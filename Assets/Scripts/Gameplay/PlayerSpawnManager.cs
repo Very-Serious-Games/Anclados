@@ -20,10 +20,23 @@ public class PlayerSpawnManager : MonoBehaviour
     private NetworkServer gameServer;
     private NetworkClient gameClient;
 
+    private float lastStateBroadcast = 0f;
+    private float stateBroadcastRate = 0.05f; // 20Hz
+    private NetworkUpdateManager networkUpdateManager;
+
     void Start()
     {
         gameServer = GameManager.Instance.gameServer;
         gameClient = GameManager.Instance.gameClient;
+
+        // Get NetworkUpdateManager reference
+        networkUpdateManager = FindFirstObjectByType<NetworkUpdateManager>();
+        
+        if (networkUpdateManager != null && gameServer != null)
+        {
+            // Subscribe to network tick for state broadcasts
+            networkUpdateManager.OnNetworkTick += OnNetworkTick;
+        }
 
         // Subscribe to server events (if we're hosting)
         if (gameServer != null)
@@ -61,6 +74,11 @@ public class PlayerSpawnManager : MonoBehaviour
         if (gameClient != null)
         {
             gameClient.OnMessageReceived -= HandleClientMessage;
+        }
+        
+        if (networkUpdateManager != null)
+        {
+            networkUpdateManager.OnNetworkTick -= OnNetworkTick;
         }
     }
 
@@ -382,25 +400,21 @@ public class PlayerSpawnManager : MonoBehaviour
         // For now, just log - full implementation needs CannonBallManager integration
     }
 
-    void Update()
+    /// <summary>
+    /// Called at network tick rate (e.g., 20Hz)
+    /// </summary>
+    private void OnNetworkTick()
     {
-        // Server broadcasts player states periodically
+        // Server broadcasts player states at network tick rate
         if (gameServer != null && GameManager.Instance.connectionType == ConnectionType.Host)
         {
             BroadcastPlayerStates();
         }
     }
 
-    private float lastStateBroadcast = 0f;
-    private float stateBroadcastRate = 0.05f; // 20Hz
-
     private void BroadcastPlayerStates()
     {
-        if (Time.time - lastStateBroadcast < stateBroadcastRate)
-            return;
-
-        lastStateBroadcast = Time.time;
-
+        // Remove time check since we're already at correct rate
         foreach (var kvp in spawnedPlayers)
         {
             int playerId = kvp.Key;
@@ -420,7 +434,7 @@ public class PlayerSpawnManager : MonoBehaviour
                 
                 if (targetPeer != null)
                 {
-                    // Send periodic update (unreliable for bandwidth efficiency)
+                    // Send periodic update
                     SendStateUpdate(targetPeer, controller, 0, false);
                 }
                 else

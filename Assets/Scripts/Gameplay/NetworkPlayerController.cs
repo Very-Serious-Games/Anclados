@@ -61,6 +61,10 @@ public class NetworkPlayerController : MonoBehaviour
     }
     private PlayerInput currentInput;
 
+    private float timeSinceLastInputSend = 0f;
+    private const float INPUT_SEND_INTERVAL = 0.05f; // 20Hz
+    private bool hasPendingInput = false;
+
     void Start()
     {
         rb = GetComponent<Rigidbody>();
@@ -74,11 +78,22 @@ public class NetworkPlayerController : MonoBehaviour
     {
         if (isLocalPlayer)
         {
-            // Capture input
+            // Capture input every frame for responsiveness
             CaptureInput();
             
-            // Send input to server
-            SendInputToServer();
+            // Track time for network send
+            timeSinceLastInputSend += Time.deltaTime;
+            
+            // Only send input at network tick rate if there's input
+            if (timeSinceLastInputSend >= INPUT_SEND_INTERVAL)
+            {
+                if (hasPendingInput)
+                {
+                    SendInputToServer();
+                    hasPendingInput = false;
+                }
+                timeSinceLastInputSend = 0f;
+            }
             
             // Handle cannons locally (will validate on server)
             HandleCannons();
@@ -103,19 +118,26 @@ public class NetworkPlayerController : MonoBehaviour
 
     private void CaptureInput()
     {
+        bool hadInput = currentInput.forward || currentInput.backward || 
+                       currentInput.turnLeft || currentInput.turnRight ||
+                       currentInput.anchorToggle || currentInput.fireLeft || currentInput.fireRight;
+
         currentInput.forward = Input.GetKey(KeyCode.W);
         currentInput.backward = Input.GetKey(KeyCode.S);
-        currentInput.turnLeft = Input.GetKey(KeyCode.Q);
-        currentInput.turnRight = Input.GetKey(KeyCode.E);
+        currentInput.turnLeft = Input.GetKey(KeyCode.A);
+        currentInput.turnRight = Input.GetKey(KeyCode.D);
+        currentInput.anchorToggle = Input.GetKeyDown(anchorKey);
+        currentInput.fireLeft = Input.GetKeyDown(fireLeftKey);
+        currentInput.fireRight = Input.GetKeyDown(fireRightKey);
+
+        // Mark as having pending input if anything changed or is active
+        bool hasInput = currentInput.forward || currentInput.backward || 
+                       currentInput.turnLeft || currentInput.turnRight ||
+                       currentInput.anchorToggle || currentInput.fireLeft || currentInput.fireRight;
         
-        if (Input.GetKeyDown(anchorKey) && !anchorChanging)
+        if (hasInput)
         {
-            currentInput.anchorToggle = true;
-            StartCoroutine(ToggleAnchor());
-        }
-        else
-        {
-            currentInput.anchorToggle = false;
+            hasPendingInput = true;
         }
     }
 

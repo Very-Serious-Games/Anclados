@@ -9,11 +9,11 @@ using UnityEngine;
 public class PacketQueue
 {
     [Header("Batch Settings")]
-    public int maxMessagesPerPacket = 10;      // Max messages before auto-send
-    public float autoFlushInterval = 0.05f;     // Auto-send every 50ms (20Hz)
+    public int maxMessagesPerPacket = 10;
+    public float autoFlushInterval = 0.05f; // Not used anymore with fixed tick
 
     private MessagePacket currentPacket;
-    private float lastFlushTime;
+    private float timeSinceLastFlush;
     private Action<MessagePacket> onSendPacket;
 
     public PacketQueue(Action<MessagePacket> sendCallback, int maxMessages = 10, float flushInterval = 0.05f)
@@ -23,7 +23,7 @@ public class PacketQueue
         autoFlushInterval = flushInterval;
         
         currentPacket = new MessagePacket();
-        lastFlushTime = Time.time;
+        timeSinceLastFlush = 0f;
     }
 
     /// <summary>
@@ -31,17 +31,10 @@ public class PacketQueue
     /// </summary>
     public void Enqueue(INetworkMessage message)
     {
-        // Don't batch MessagePackets (to avoid nested packets)
-        if (message is MessagePacket)
-        {
-            onSendPacket?.Invoke(message as MessagePacket);
-            return;
-        }
-
         currentPacket.AddMessage(message);
-
-        // Auto-send if packet is full
-        if (currentPacket.IsFull(maxMessagesPerPacket))
+        
+        // Auto-flush if packet is full
+        if (currentPacket.messageCount >= maxMessagesPerPacket)
         {
             Flush();
         }
@@ -56,18 +49,18 @@ public class PacketQueue
         {
             onSendPacket?.Invoke(currentPacket);
             currentPacket = new MessagePacket();
-            lastFlushTime = Time.time;
+            timeSinceLastFlush = 0f;
         }
     }
 
     /// <summary>
-    /// Should be called regularly (e.g., in Update) to handle timed flushes
+    /// Should be called at network tick rate to handle timed flushes
     /// </summary>
     public void Update()
     {
-        // Auto-flush if interval elapsed and we have pending messages
-        if (currentPacket.messageCount > 0 && 
-            Time.time - lastFlushTime >= autoFlushInterval)
+        // Since we're now called at fixed network tick rate,
+        // just flush any pending messages
+        if (currentPacket.messageCount > 0)
         {
             Flush();
         }
