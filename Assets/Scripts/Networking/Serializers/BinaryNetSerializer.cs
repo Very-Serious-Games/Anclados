@@ -399,18 +399,18 @@ public class BinaryNetSerializer : INetworkSerializer
     {
         if (string.IsNullOrEmpty(str))
         {
-            writer.Write((byte)0);
+            writer.Write((ushort)0);
             return;
         }
 
         byte[] bytes = Encoding.UTF8.GetBytes(str);
-        writer.Write((byte)bytes.Length);
+        writer.Write((ushort)bytes.Length);
         writer.Write(bytes);
     }
 
     private string ReadCompressedString(BinaryReader reader)
     {
-        byte length = reader.ReadByte();
+        ushort length = reader.ReadUInt16();
         if (length == 0) return "";
         
         byte[] bytes = reader.ReadBytes(length);
