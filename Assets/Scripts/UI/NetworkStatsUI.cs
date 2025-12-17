@@ -37,12 +37,13 @@ public class NetworkStatsUI : MonoBehaviour
 
     void Start()
     {
-        // Try to find heartbeat manager
-        heartbeat = FindFirstObjectByType<HeartbeatManager>();
-        
-        // Get network references
-        server = GameManager.Instance?.gameServer;
-        client = GameManager.Instance?.gameClient;
+        // Get network references from GameManager
+        GameManager gm = GameManager.Instance;
+        if (gm != null)
+        {
+            server = gm.gameServer;
+            client = gm.gameClient;
+        }
         
         if (!showStats && gameObject.activeSelf)
         {
@@ -53,6 +54,20 @@ public class NetworkStatsUI : MonoBehaviour
     void Update()
     {
         if (!showStats) return;
+        
+        // Try to find heartbeat if we don't have it yet
+        if (heartbeat == null)
+        {
+            NetworkHeartbeatIntegration integration = FindFirstObjectByType<NetworkHeartbeatIntegration>();
+            if (integration != null)
+            {
+                heartbeat = integration.GameClientHeartbeat;
+                if (heartbeat != null)
+                {
+                    Debug.Log("[NetworkStatsUI] Found HeartbeatManager for RTT display");
+                }
+            }
+        }
         
         // Update bandwidth stats every second
         bandwidthTimer += Time.deltaTime;
@@ -79,11 +94,11 @@ public class NetworkStatsUI : MonoBehaviour
         // RTT (Round Trip Time)
         if (rttText != null && heartbeat != null)
         {
-            float timeSincePong = heartbeat.GetTimeSinceLastPong();
+            float rtt = heartbeat.GetRtt();
             bool isHealthy = heartbeat.IsConnectionHealthy();
             
             Color color = isHealthy ? Color.green : Color.red;
-            rttText.text = $"RTT: {timeSincePong * 1000:F0}ms";
+            rttText.text = $"RTT: {rtt * 1000:F0}ms";
             rttText.color = color;
         }
 
