@@ -12,6 +12,8 @@ public class NetworkPlayerController : MonoBehaviour
     public bool isLocalPlayer = false;
     public int playerId = -1;
     private int inputSequenceNumber = 0;
+    private float networkUpdateRate = 0.05f; // 20Hz
+    private float timeSinceLastNetworkUpdate = 0f;
 
     [Header("Movement")]
     public float acceleration = 8f;
@@ -90,11 +92,18 @@ public class NetworkPlayerController : MonoBehaviour
     {
         if (isLocalPlayer)
         {
-            // Capture input
+            // Capture input every frame
             CaptureInput();
             
-            // Send input to server
-            SendInputToServer();
+            // Accumulate time for fixed network update rate
+            timeSinceLastNetworkUpdate += Time.deltaTime;
+            
+            // Send input to server at fixed 20Hz rate
+            if (timeSinceLastNetworkUpdate >= networkUpdateRate)
+            {
+                SendInputToServer();
+                timeSinceLastNetworkUpdate = 0f;
+            }
             
             // Handle cannons locally (will validate on server)
             HandleCannons();
@@ -211,7 +220,6 @@ public class NetworkPlayerController : MonoBehaviour
             inputSequenceNumber++
         );
 
-        Debug.Log($"[NetworkPlayerController] Sending input to server - Forward:{currentInput.forward} Backward:{currentInput.backward}");
         GameManager.Instance.gameClient.Send(inputMsg);
         
         // Reset one-shot inputs
