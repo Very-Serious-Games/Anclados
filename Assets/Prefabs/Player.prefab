@@ -435,7 +435,7 @@ MonoBehaviour:
   acceleration: 8
   maxSpeed: 12
   reverseSpeed: 4
-  dragWater: 0.8
+  dragWater: 0.4
   anchorKey: 102
   anchorDropTime: 2
   anchorLiftTime: 2
