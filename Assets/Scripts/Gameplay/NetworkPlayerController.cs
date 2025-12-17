@@ -173,8 +173,8 @@ public class NetworkPlayerController : MonoBehaviour
     {
         currentInput.forward = Input.GetKey(KeyCode.W);
         currentInput.backward = Input.GetKey(KeyCode.S);
-        currentInput.turnLeft = Input.GetKey(KeyCode.Q);
-        currentInput.turnRight = Input.GetKey(KeyCode.E);
+        currentInput.turnLeft = Input.GetKey(KeyCode.A);
+        currentInput.turnRight = Input.GetKey(KeyCode.D);
         
         if (Input.GetKeyDown(anchorKey) && !anchorChanging)
         {
