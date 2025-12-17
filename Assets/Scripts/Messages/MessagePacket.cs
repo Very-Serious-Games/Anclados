@@ -46,6 +46,11 @@ public class MessagePacket : INetworkMessage
         messagePayloads.Clear();
         messageCount = 0;
     }
+    
+    public int GetMessageCount()
+    {
+        return messageCount;
+    }
 
     public List<INetworkMessage> UnpackMessages()
     {

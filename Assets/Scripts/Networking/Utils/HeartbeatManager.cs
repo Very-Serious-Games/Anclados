@@ -62,6 +62,12 @@ public class HeartbeatManager : MonoBehaviour
             lastPongTime = Time.time;
             float rtt = Time.time - pong.timestamp;
             Debug.Log($"[HeartbeatManager] Pong received - RTT: {rtt * 1000:F1}ms");
+            
+            // Record RTT in statistics
+            if (networkClient?.Statistics != null)
+            {
+                networkClient.Statistics.RecordRtt(rtt * 1000f); // Convert to milliseconds
+            }
         }
     }
 
@@ -93,5 +99,21 @@ public class HeartbeatManager : MonoBehaviour
     public bool IsConnectionHealthy()
     {
         return isRunning && (Time.time - lastPongTime) < timeoutDuration;
+    }
+    
+    /// <summary>
+    /// Get current RTT from statistics
+    /// </summary>
+    public float GetCurrentRtt()
+    {
+        return networkClient?.Statistics?.AverageRtt ?? 0f;
+    }
+    
+    /// <summary>
+    /// Get RTT jitter from statistics
+    /// </summary>
+    public float GetRttJitter()
+    {
+        return networkClient?.Statistics?.RttJitter ?? 0f;
     }
 }

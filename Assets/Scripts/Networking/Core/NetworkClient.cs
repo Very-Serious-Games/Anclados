@@ -17,11 +17,18 @@ public class NetworkClient
     public bool enableBatching = true;
     public int maxMessagesPerPacket = 10;
     public float autoFlushInterval = 0.05f;
+    
+    // Statistics tracking
+    private NetworkStatistics _statistics;
+    public NetworkStatistics Statistics => _statistics;
 
     public NetworkClient(ITransport transport, INetworkSerializer serializer)
     {
         _transport = transport;
         _serializer = serializer;
+        
+        // Initialize statistics
+        _statistics = new NetworkStatistics();
         
         // Initialize packet queue in constructor
         _packetQueue = new PacketQueue(
@@ -59,6 +66,7 @@ public class NetworkClient
         {
             byte[] data = _serializer.Serialize(message);
             _transport.SendToServer(data);
+            _statistics.RecordPacketSent(data.Length, 1, false);
         }
     }
     
@@ -66,12 +74,17 @@ public class NetworkClient
     {
         byte[] data = _serializer.Serialize(packet);
         _transport.SendToServer(data);
+        
+        // Track statistics for batched packets
+        int messageCount = packet.GetMessageCount();
+        _statistics.RecordPacketSent(data.Length, messageCount, messageCount > 1);
     }
 
     // Private Functions
     
     private void HandleConnected()
     {
+        _statistics.Reset();
         OnConnected?.Invoke();
     }
     
@@ -97,6 +110,9 @@ public class NetworkClient
         // Unpack batched messages
         if (message is MessagePacket packet)
         {
+            int messageCount = packet.GetMessageCount();
+            _statistics.RecordPacketReceived(data.Length, messageCount);
+            
             foreach (var unpackedMessage in packet.UnpackMessages())
             {
                 OnMessageReceived?.Invoke(unpackedMessage);
@@ -104,6 +120,7 @@ public class NetworkClient
         }
         else
         {
+            _statistics.RecordPacketReceived(data.Length, 1);
             OnMessageReceived?.Invoke(message);
         }
     }
@@ -112,5 +129,8 @@ public class NetworkClient
     {
         // Update packet queue for timed flushing
         _packetQueue?.Update();
+        
+        // Update statistics calculations
+        _statistics?.Update();
     }
 }

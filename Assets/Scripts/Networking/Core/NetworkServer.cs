@@ -27,6 +27,10 @@ public class NetworkServer
     public bool enableBatching = true;
     public int maxMessagesPerPacket = 10;
     public float autoFlushInterval = 0.05f;
+    
+    // Statistics tracking
+    private NetworkStatistics _statistics;
+    public NetworkStatistics Statistics => _statistics;
 
     public NetworkServer(ITransport transport, INetworkSerializer serializer)
     {
@@ -36,6 +40,9 @@ public class NetworkServer
         // Initialize dictionaries in constructor
         _connectedPeers = new Dictionary<int, Peer>();
         _peerQueues = new Dictionary<int, PacketQueue>();
+        
+        // Initialize statistics
+        _statistics = new NetworkStatistics();
     }
 
     public void StartServer(int port)
@@ -46,6 +53,7 @@ public class NetworkServer
 
         // Start the transport server
         _transport.StartServer(port);
+        _statistics.Reset();
         OnServerStarted?.Invoke();
     }
 
@@ -71,6 +79,7 @@ public class NetworkServer
         {
             byte[] data = _serializer.Serialize(message);
             _transport.SendToClient(peer.ConnectionId, data);
+            _statistics.RecordPacketSent(data.Length, 1, false);
         }
     }
     
@@ -78,6 +87,10 @@ public class NetworkServer
     {
         byte[] data = _serializer.Serialize(packet);
         _transport.SendToClient(connectionId, data);
+        
+        // Track statistics for batched packets
+        int messageCount = packet.GetMessageCount();
+        _statistics.RecordPacketSent(data.Length, messageCount, messageCount > 1);
     }
 
     public void Broadcast<T>(T message, Peer excludePeer = null) where T : INetworkMessage
@@ -152,6 +165,9 @@ public class NetworkServer
             // Unpack batched messages
             if (message is MessagePacket packet)
             {
+                int messageCount = packet.GetMessageCount();
+                _statistics.RecordPacketReceived(data.Length, messageCount);
+                
                 foreach (var unpackedMessage in packet.UnpackMessages())
                 {
                     OnMessageReceived?.Invoke(peer, unpackedMessage);
@@ -159,6 +175,7 @@ public class NetworkServer
             }
             else
             {
+                _statistics.RecordPacketReceived(data.Length, 1);
                 OnMessageReceived?.Invoke(peer, message);
             }
         }
@@ -174,6 +191,9 @@ public class NetworkServer
                 queue?.Update();
             }
         }
+        
+        // Update statistics calculations
+        _statistics?.Update();
     }
     
     // ---------- Public Utility Methods ------------- //
