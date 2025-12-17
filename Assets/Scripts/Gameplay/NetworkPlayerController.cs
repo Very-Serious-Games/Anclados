@@ -81,8 +81,6 @@ public class NetworkPlayerController : MonoBehaviour
     {
         if (rb == null)
             rb = GetComponent<Rigidbody>();
-            
-        rb.freezeRotation = false;
 
         if (lockHeight)
             rb.constraints |= RigidbodyConstraints.FreezePositionY;
