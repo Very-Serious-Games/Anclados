@@ -95,8 +95,6 @@ public class BinaryNetSerializer : INetworkSerializer
                 if (input.turnLeft) inputFlags |= 0b00000100;
                 if (input.turnRight) inputFlags |= 0b00001000;
                 if (input.anchorToggle) inputFlags |= 0b00010000;
-                if (input.fireLeft) inputFlags |= 0b00100000;
-                if (input.fireRight) inputFlags |= 0b01000000;
                 writer.Write(inputFlags);
                 WriteHalfFloat(writer, input.timestamp);
                 writer.Write((ushort)input.sequenceNumber); // Use ushort for sequence (wraps at 65535)
@@ -220,8 +218,6 @@ public class BinaryNetSerializer : INetworkSerializer
                     (inputFlags & 0b00000100) != 0,
                     (inputFlags & 0b00001000) != 0,
                     (inputFlags & 0b00010000) != 0,
-                    (inputFlags & 0b00100000) != 0,
-                    (inputFlags & 0b01000000) != 0,
                     ReadHalfFloat(reader),
                     reader.ReadUInt16()
                 );
